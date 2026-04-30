@@ -393,63 +393,50 @@ Please help me implement these changes to improve my website's visibility to AI 
         isComplete={step2Complete}
       >
         <div className="space-y-6">
-          {/* AI Analysis Results Summary */}
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6">
-            <h3 className="font-semibold text-foreground mb-4">Analysis Results</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                <span className="text-sm text-muted-foreground">AEO Score</span>
-                <span className="font-bold text-lg text-primary">{result.aeoScore}/100</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                <span className="text-sm text-muted-foreground">Issues Found</span>
-                <span className="font-bold text-lg">{result.missingElements?.length || 0}</span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-background rounded-lg">
-                <span className="text-sm text-muted-foreground">Optimization Tasks</span>
-                <span className="font-bold text-lg">{result.actionPlan?.length || 0}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Crawler Status */}
-          <div>
-            <h4 className="font-semibold text-foreground mb-3">AI Crawler Access</h4>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {crawlers.map((crawler) => {
-                const isAllowed = result.aiCrawlerStatus?.[crawler.key] ?? true
-                return (
-                  <div
-                    key={crawler.key}
-                    className={`p-4 rounded-xl border transition-all text-center ${
-                      isAllowed
-                        ? 'bg-success/10 border-success/30'
-                        : 'bg-destructive/10 border-destructive/30'
-                    }`}
-                  >
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {crawlers.map((crawler) => {
+              const isAllowed = result.aiCrawlerStatus?.[crawler.key] ?? true
+              return (
+                <div
+                  key={crawler.key}
+                  className={`p-4 rounded-xl border transition-all ${
+                    isAllowed
+                      ? 'bg-success/10 border-success/30'
+                      : 'bg-destructive/10 border-destructive/30'
+                  }`}
+                >
+                  <div className="flex flex-col items-center text-center gap-2">
                     {isAllowed ? (
-                      <CheckCircle2 className="w-5 h-5 text-success mx-auto mb-2" />
+                      <CheckCircle2 className="w-6 h-6 text-success" />
                     ) : (
-                      <XCircle className="w-5 h-5 text-destructive mx-auto mb-2" />
+                      <XCircle className="w-6 h-6 text-destructive" />
                     )}
-                    <p className="text-xs font-semibold text-foreground">{crawler.name}</p>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">{crawler.name}</p>
+                      <p className="text-xs text-muted-foreground">{crawler.fullName}</p>
+                    </div>
                   </div>
-                )
-              })}
-            </div>
+                </div>
+              )
+            })}
           </div>
 
           {result.aiCrawlerStatus && Object.values(result.aiCrawlerStatus).some(v => !v) && (
             <div className="p-4 bg-warning/10 border border-warning/30 rounded-xl">
               <p className="text-warning text-sm">
-                <span className="font-semibold">Note:</span> Some AI crawlers are blocked. Check Step 1 tasks for robots.txt configuration.
+                <span className="font-semibold">Warning:</span> Some AI crawlers are blocked. Update your robots.txt.
               </p>
             </div>
           )}
 
-          <p className="text-sm text-muted-foreground">
-            Based on this analysis, you&apos;ll find specific optimization tasks in Step 1. Complete them to improve your AI visibility.
-          </p>
+          <div>
+            <p className="text-sm font-medium text-foreground mb-3">Recommended robots.txt</p>
+            <div className="bg-background border border-border rounded-xl overflow-hidden">
+              <pre className="p-4 text-sm text-muted-foreground overflow-x-auto font-mono leading-relaxed">
+                {robotsTxt}
+              </pre>
+            </div>
+          </div>
         </div>
       </StepCard>
 
