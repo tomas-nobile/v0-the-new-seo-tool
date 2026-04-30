@@ -13,8 +13,6 @@ interface GeneratedPagePreviewProps {
 export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
   const [copied, setCopied] = useState(false)
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview')
-  const [hasDownloaded, setHasDownloaded] = useState(false)
-
   const filename = `${result.businessName.toLowerCase().replace(/\s+/g, '-')}-aeo-page.html`
   const businessUrl = new URL(window.location.href).origin // Fallback, ideally from result
 
@@ -34,7 +32,6 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
     a.click()
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
-    setHasDownloaded(true)
   }
 
   return (

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy, ExternalLink, AlertCircle, CheckCircle2, Sparkles, FileCode, Bot } from 'lucide-react'
+import { Copy, ExternalLink, AlertCircle, CheckCircle2, Sparkles, FileCode, Bot, Send, Loader2 } from 'lucide-react'
 
 interface UploadInstructionsProps {
   businessName: string
@@ -21,6 +21,41 @@ export function UploadInstructions({
   const [manualMethod, setManualMethod] = useState<'cpanel' | 'ftp' | 'wordpress'>('cpanel')
   const [copied, setCopied] = useState(false)
   const [copiedEndpoint, setCopiedEndpoint] = useState(false)
+  const [hosting, setHosting] = useState('')
+  const [techStack, setTechStack] = useState('')
+  const [aiResponse, setAiResponse] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const responseRef = useRef<HTMLDivElement>(null)
+
+  const handleAskAI = async () => {
+    if (!hosting.trim()) return
+    setIsLoading(true)
+    setAiResponse('')
+
+    try {
+      const res = await fetch('/api/upload-help', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hosting, techStack, filename, suggestedEndpoint, businessName }),
+      })
+
+      if (!res.body) return
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        setAiResponse(prev => prev + decoder.decode(value, { stream: true }))
+        responseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }
+    } catch (e) {
+      setAiResponse('Sorry, something went wrong. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const suggestedEndpoint = `/best-${businessName.toLowerCase().replace(/\s+/g, '-')}`
 
@@ -70,17 +105,6 @@ export function UploadInstructions({
       ],
     },
   }
-
-  const aiInstructions = [
-    {
-      title: 'ChatGPT / Claude',
-      prompt: `I have an HTML file called "${filename}" that I need to upload to my website's root folder. My website is hosted on [YOUR HOSTING PROVIDER]. Can you give me step-by-step instructions to upload this file so it's accessible at ${suggestedEndpoint}.html?`,
-    },
-    {
-      title: 'Ask your hosting support',
-      prompt: `Hi, I need to upload an HTML file to my website root. The file is called "${filename}" and I want it accessible at ${suggestedEndpoint}.html. Can you help me upload it or tell me how?`,
-    },
-  ]
 
   const currentManual = manualInstructions[manualMethod]
 
@@ -177,36 +201,89 @@ export function UploadInstructions({
       ) : (
         <>
           {/* AI Help Section */}
-          <div className="space-y-4">
-            <p className="text-muted-foreground">
-              Copy one of these prompts and paste it into ChatGPT, Claude, or your hosting support chat:
-            </p>
+          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-primary" />
+              <span className="font-semibold text-foreground">Tell us about your setup</span>
+            </div>
 
-            {aiInstructions.map((ai, idx) => (
-              <div key={idx} className="bg-card border border-border rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-2">
+            {/* Input 1: Hosting */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Your hosting provider <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                value={hosting}
+                onChange={e => setHosting(e.target.value)}
+                placeholder="e.g. Hostinger, GoDaddy, SiteGround, WooCommerce, Shopify..."
+                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
+              />
+            </div>
+
+            {/* Input 2: Tech Stack (optional) */}
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                How is your page built?{' '}
+                <span className="text-muted-foreground font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={techStack}
+                onChange={e => setTechStack(e.target.value)}
+                placeholder="e.g. WordPress, Wix, custom HTML, Webflow, I don't know..."
+                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
+              />
+            </div>
+
+            <Button
+              onClick={handleAskAI}
+              disabled={!hosting.trim() || isLoading}
+              className="w-full gap-2 bg-primary hover:bg-primary/90"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Getting instructions...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Get my upload instructions
+                </>
+              )}
+            </Button>
+
+            {/* Streaming AI Response */}
+            {(aiResponse || isLoading) && (
+              <div className="bg-background border border-primary/30 rounded-lg p-5 space-y-2" ref={responseRef}>
+                <div className="flex items-center gap-2 mb-3">
                   <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="font-medium">{ai.title}</span>
+                  <span className="text-sm font-medium text-primary">Upload instructions for you</span>
                 </div>
-                <div className="relative">
-                  <p className="text-sm text-muted-foreground bg-background border border-border rounded p-3 pr-12">
-                    {ai.prompt}
-                  </p>
+                <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                  {aiResponse}
+                  {isLoading && (
+                    <span className="inline-block w-2 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
+                  )}
+                </div>
+                {aiResponse && !isLoading && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="absolute top-2 right-2"
+                    className="mt-2 gap-2 text-muted-foreground"
                     onClick={async () => {
-                      await navigator.clipboard.writeText(ai.prompt)
+                      await navigator.clipboard.writeText(aiResponse)
                       setCopied(true)
                       setTimeout(() => setCopied(false), 2000)
                     }}
                   >
-                    <Copy className="w-4 h-4" />
+                    {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Copied!' : 'Copy instructions'}
                   </Button>
-                </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
         </>
       )}
