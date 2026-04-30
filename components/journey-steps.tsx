@@ -342,16 +342,44 @@ Please help me implement these changes to improve my website's visibility to AI 
             )}
           </div>
           
-          <div className="space-y-3">
-            {websiteActions.map((action, index) => (
-              <ActionItemCard
-                key={index}
-                action={action}
-                index={index}
-                isChecked={checkedActions.has(index)}
-                onToggle={() => toggleAction(index)}
-              />
-            ))}
+          <div className="space-y-6">
+            {/* Group actions by priority */}
+            {['QUICK WIN', 'THIS WEEK', 'LONG TERM'].map((priority) => {
+              const actionsForPriority = websiteActions.filter(a => a.priority === priority)
+              if (actionsForPriority.length === 0) return null
+              
+              const priorityConfig = {
+                'QUICK WIN': { color: 'success', label: '⚡ Quick Wins', description: 'Do these first - high impact, low effort' },
+                'THIS WEEK': { color: 'primary', label: '📋 This Week', description: 'Important tasks to complete soon' },
+                'LONG TERM': { color: 'muted-foreground', label: '🎯 Long Term', description: 'Strategic improvements for growth' },
+              }
+              
+              const config = priorityConfig[priority as keyof typeof priorityConfig]
+              
+              return (
+                <div key={priority} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`font-semibold text-${config.color}`}>{config.label}</h4>
+                    <span className="text-xs text-muted-foreground">({actionsForPriority.length} tasks)</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground ml-0">{config.description}</p>
+                  <div className="space-y-2">
+                    {actionsForPriority.map((action, idx) => {
+                      const originalIndex = websiteActions.indexOf(action)
+                      return (
+                        <ActionItemCard
+                          key={`${priority}-${idx}`}
+                          action={action}
+                          index={originalIndex}
+                          isChecked={checkedActions.has(originalIndex)}
+                          onToggle={() => toggleAction(originalIndex)}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </StepCard>
