@@ -36,6 +36,12 @@ export function ResultsSection({ result }: ResultsSectionProps) {
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <JourneySteps result={result} />
         </div>
+
+        {result.modelUsed && (
+          <p className="text-center text-xs text-muted-foreground/40">
+            Analyzed with {result.modelUsed}
+          </p>
+        )}
       </div>
     </section>
   )

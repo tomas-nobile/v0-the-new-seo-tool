@@ -1,10 +1,51 @@
 import { generateText } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
+import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
 
 const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
 })
+
+const perplexity = createOpenAI({
+  apiKey: process.env.PERPLEXITY_API_KEY,
+  baseURL: 'https://api.perplexity.ai',
+})
+
+const MODEL_CHAIN = [
+  { model: perplexity('sonar-pro'), name: 'Perplexity Sonar Pro' },
+  { model: groq('llama-3.3-70b-versatile'), name: 'Llama 3.3 70B' },
+  { model: groq('llama-3.1-8b-instant'), name: 'Llama 3.1 8B' },
+]
+
+function isRateLimitError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error)
+  return (
+    msg.includes('rate_limit_exceeded') ||
+    msg.includes('Rate limit reached') ||
+    (error as any)?.statusCode === 429 ||
+    (error as any)?.lastError?.statusCode === 429
+  )
+}
+
+async function generateWithFallback(
+  messages: { role: 'system' | 'user'; content: string }[]
+): Promise<{ text: string; modelUsed: string }> {
+  let lastError: unknown
+  for (const { model, name } of MODEL_CHAIN) {
+    try {
+      const { text } = await generateText({ model, messages })
+      return { text, modelUsed: name }
+    } catch (error) {
+      if (isRateLimitError(error)) {
+        lastError = error
+        continue
+      }
+      throw error
+    }
+  }
+  throw lastError
+}
 
 // Function to check AI crawler status from robots.txt
 async function checkAICrawlerStatus(url: string) {
@@ -312,10 +353,8 @@ export async function POST(req: Request) {
       )
     }
 
-    // Step 2: Analyze with Groq (fast inference)
-    const { text } = await generateText({
-      model: groq('llama-3.3-70b-versatile'),
-      messages: [
+    // Step 2: Analyze with AI (Perplexity → Groq 70B → Groq 8B)
+    const { text, modelUsed } = await generateWithFallback([
         {
           role: 'system',
           content: 'You are an AEO (Agent Engine Optimization) expert. Always respond with valid JSON only, no markdown code blocks or extra text.',
@@ -394,8 +433,7 @@ CRITICAL FOR missingElements:
 - Examples: "No FAQ addressing common questions about [business]", "No pricing information visible", "No structured data markup", "No clear delivery/shipping policy", "No customer testimonials or reviews", "No comparison with competitors", "No team/expertise credentials"`,
         },
 
-      ],
-    })
+    ])
 
     if (!text) {
       return Response.json(
@@ -443,6 +481,7 @@ CRITICAL FOR missingElements:
       actionPlan: actions,
       aiCrawlerStatus,
       quickWinsCount,
+      modelUsed,
     }
 
     return Response.json(finalResult)

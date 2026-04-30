@@ -45,4 +45,5 @@ export interface AnalysisResult {
   actionPlan: ActionItem[]
   aiCrawlerStatus: AICrawlerStatus
   quickWinsCount: number
+  modelUsed?: string
 }

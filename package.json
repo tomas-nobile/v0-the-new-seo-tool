@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.36",
+    "@ai-sdk/openai": "^3.0.55",
     "@ai-sdk/react": "^3.0.172",
     "@hookform/resolvers": "^3.9.1",
     "@mendable/firecrawl-js": "^4.20.0",
