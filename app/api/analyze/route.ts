@@ -449,11 +449,36 @@ CRITICAL FOR missingElements:
   } catch (error) {
     console.error('[v0] Analysis error:', error)
     
-    // Check for AI Gateway credit card requirement
     const errorMessage = error instanceof Error ? error.message : String(error)
+
+    // Check for Groq rate limit error
+    if (errorMessage.includes('rate_limit_exceeded') || errorMessage.includes('Rate limit reached')) {
+      let retryAfterSeconds = 3600
+      const anyError = error as any
+      const retryAfterHeader =
+        anyError?.lastError?.responseHeaders?.['retry-after'] ||
+        anyError?.errors?.[0]?.responseHeaders?.['retry-after']
+      if (retryAfterHeader) {
+        retryAfterSeconds = parseInt(retryAfterHeader, 10)
+      } else {
+        const match = errorMessage.match(/Please try again in (?:(\d+)h)?(?:(\d+)m)?(?:([\d.]+)s)?/)
+        if (match) {
+          const hours = parseInt(match[1] || '0', 10)
+          const minutes = parseInt(match[2] || '0', 10)
+          const seconds = parseFloat(match[3] || '0')
+          retryAfterSeconds = hours * 3600 + minutes * 60 + Math.ceil(seconds)
+        }
+      }
+      return Response.json(
+        { error: 'Daily AI limit reached', isRateLimitError: true, retryAfterSeconds },
+        { status: 429 }
+      )
+    }
+
+    // Check for AI Gateway credit card requirement
     if (errorMessage.includes('credit card') || errorMessage.includes('customer_verification_required')) {
       return Response.json(
-        { 
+        {
           error: 'AI Gateway Setup Required',
           details: 'To use this tool, you need to add a credit card to your Vercel account to unlock free AI Gateway credits. Visit your Vercel dashboard → AI → Add Credit Card.',
           isSetupError: true
@@ -461,7 +486,7 @@ CRITICAL FOR missingElements:
         { status: 403 }
       )
     }
-    
+
     return Response.json(
       { error: 'An unexpected error occurred while analyzing the website. Please try again.' },
       { status: 500 }

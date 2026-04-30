@@ -15,12 +15,14 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [setupError, setSetupError] = useState<{ error: string; details: string } | null>(null)
+  const [rateLimitError, setRateLimitError] = useState<{ retryAfterSeconds: number } | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const handleAnalyze = async (url: string) => {
     setIsAnalyzing(true)
     setError(null)
     setSetupError(null)
+    setRateLimitError(null)
     setResult(null)
 
     const loadingMessages = [
@@ -45,23 +47,41 @@ export default function Home() {
         body: JSON.stringify({ url }),
       })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        if (data.isSetupError) {
-          setSetupError({ error: data.error, details: data.details })
-          return
-        }
-        throw new Error(data.error || 'Failed to analyze website')
+      let data: Record<string, unknown> = {}
+      try {
+        data = await response.json()
+      } catch {
+        // JSON parse failed — fall through to status-based checks below
       }
 
-      setResult(data)
-      
+      if (!response.ok) {
+        if (data.isRateLimitError) {
+          setRateLimitError({ retryAfterSeconds: (data.retryAfterSeconds as number) ?? 3600 })
+          return
+        }
+        if (response.status === 429) {
+          setRateLimitError({ retryAfterSeconds: 3600 })
+          return
+        }
+        if (data.isSetupError) {
+          setSetupError({ error: data.error as string, details: data.details as string })
+          return
+        }
+        throw new Error((data.error as string) || 'Failed to analyze website')
+      }
+
+      setResult(data as AnalysisResult)
+
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: 'smooth' })
       }, 100)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An unexpected error occurred')
+      const msg = err instanceof Error ? err.message : String(err)
+      if (msg.includes('rate_limit_exceeded') || /rate limit/i.test(msg)) {
+        setRateLimitError({ retryAfterSeconds: 3600 })
+      } else {
+        setError(msg || 'An unexpected error occurred')
+      }
     } finally {
       clearInterval(messageInterval)
       setIsAnalyzing(false)
@@ -78,11 +98,13 @@ export default function Home() {
           onDismiss={() => setSetupError(null)}
         />
       )}
-      <HeroSection 
+      <HeroSection
         onAnalyze={handleAnalyze}
         isAnalyzing={isAnalyzing}
         loadingMessage={loadingMessage}
         error={error}
+        rateLimitError={rateLimitError}
+        onRateLimitDismiss={() => setRateLimitError(null)}
       />
       <StatsSection />
       <HowItWorksSection />

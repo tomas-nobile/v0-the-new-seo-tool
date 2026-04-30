@@ -1,19 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, Loader2, Sparkles } from 'lucide-react'
+import { ArrowRight, Clock, Loader2, Sparkles } from 'lucide-react'
 
 interface HeroSectionProps {
   onAnalyze: (url: string) => void
   isAnalyzing: boolean
   loadingMessage: string
   error: string | null
+  rateLimitError: { retryAfterSeconds: number } | null
+  onRateLimitDismiss?: () => void
 }
 
-export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error }: HeroSectionProps) {
+function formatCountdown(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  if (h > 0) return `${h}h ${m}m ${String(s).padStart(2, '0')}s`
+  if (m > 0) return `${m}m ${String(s).padStart(2, '0')}s`
+  return `${s}s`
+}
+
+export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rateLimitError, onRateLimitDismiss }: HeroSectionProps) {
   const [url, setUrl] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [countdown, setCountdown] = useState(0)
+
+  useEffect(() => {
+    if (!rateLimitError) return
+    setCountdown(rateLimitError.retryAfterSeconds)
+    const interval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(interval)
+          onRateLimitDismiss?.()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [rateLimitError])
 
   const validateUrl = (value: string): boolean => {
     if (!value.trim()) {
@@ -111,6 +139,24 @@ export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error }: H
             <p className="mt-3 text-sm text-destructive text-left">
               {validationError || error}
             </p>
+          )}
+
+          {rateLimitError && countdown > 0 && (
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left">
+              <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <div>
+                <p className="text-sm font-medium text-amber-300">
+                  Daily analysis limit reached
+                </p>
+                <p className="mt-0.5 text-sm text-amber-400/80">
+                  The free AI tier processes up to 100,000 tokens per day. You can analyze again in{' '}
+                  <span className="font-mono font-semibold text-amber-300">
+                    {formatCountdown(countdown)}
+                  </span>
+                  .
+                </p>
+              </div>
+            </div>
           )}
         </form>
 
