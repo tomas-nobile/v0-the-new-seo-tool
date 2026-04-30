@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, Copy, Download, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { CheckCircle2, XCircle, Copy, Download, Check, ChevronDown, ChevronUp, Sparkles, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GeneratedPagePreview } from '@/components/generated-page-preview'
 import type { AnalysisResult, ActionItem } from '@/lib/types'
@@ -145,6 +145,8 @@ export function JourneySteps({ result }: JourneyStepsProps) {
   const [checkedActions, setCheckedActions] = useState<Set<number>>(new Set())
   const [robotsCopied, setRobotsCopied] = useState(false)
   const [htmlDownloaded, setHtmlDownloaded] = useState(false)
+  const [showPromptModal, setShowPromptModal] = useState(false)
+  const [promptCopied, setPromptCopied] = useState(false)
   
   useEffect(() => {
     const saved = localStorage.getItem(`aeo-actions-${result.businessName}`)
@@ -207,6 +209,32 @@ Allow: /`
     await navigator.clipboard.writeText(robotsTxt)
     setRobotsCopied(true)
     localStorage.setItem(`aeo-robots-${result.businessName}`, 'true')
+  }
+
+  const generateAIPrompt = () => {
+    const pendingActions = websiteActions.filter((_, i) => !checkedActions.has(i))
+    const actionsList = pendingActions.map((a, i) => `${i + 1}. ${a.action.split('\n')[0]}`).join('\n')
+    
+    return `I need help implementing the following improvements for my website "${result.businessName}" (${result.mainCategory}${result.location ? ` in ${result.location}` : ''}):
+
+## Current Issues Found
+${result.missingElements?.map(e => `- ${e}`).join('\n') || 'No specific issues listed'}
+
+## Actions to Implement
+${actionsList}
+
+## Context
+- Business Type: ${result.siteType}
+- AEO Score: ${result.aeoScore}/100
+- Products/Services: ${result.productsOrServices?.slice(0, 5).join(', ') || 'Not specified'}
+
+Please help me implement these changes to improve my website's visibility to AI agents like ChatGPT, Claude, and Perplexity. Focus on creating clear, structured content that AI can easily understand and cite.`
+  }
+
+  const handleCopyPrompt = async () => {
+    await navigator.clipboard.writeText(generateAIPrompt())
+    setPromptCopied(true)
+    setTimeout(() => setPromptCopied(false), 2000)
   }
 
   const handleDownloadRobots = () => {
@@ -273,6 +301,16 @@ Allow: /`
             />
           </div>
           
+          {/* AI Prompt Generator Button */}
+          <Button
+            onClick={() => setShowPromptModal(true)}
+            variant="outline"
+            className="w-full gap-2 h-11 border-primary/30 hover:border-primary hover:bg-primary/5"
+          >
+            <Sparkles className="w-4 h-4 text-primary" />
+            Generate prompt for your AI (v0, Claude, Cursor, Copilot)
+          </Button>
+          
           <div className="space-y-3 mt-4">
             {websiteActions.map((action, index) => (
               <ActionItemCard
@@ -286,6 +324,54 @@ Allow: /`
           </div>
         </div>
       </StepCard>
+
+      {/* AI Prompt Modal */}
+      {showPromptModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Sparkles className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-foreground">AI Prompt Generated</h3>
+                  <p className="text-sm text-muted-foreground">Copy and paste into v0, Claude, Cursor, or GitHub Copilot</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowPromptModal(false)}
+                className="p-2 hover:bg-secondary rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto max-h-[50vh]">
+              <pre className="text-sm text-muted-foreground bg-background border border-border rounded-xl p-4 whitespace-pre-wrap font-mono leading-relaxed">
+                {generateAIPrompt()}
+              </pre>
+            </div>
+            
+            <div className="p-4 border-t border-border flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowPromptModal(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCopyPrompt}
+                className="flex-1 gap-2 bg-primary hover:bg-primary/90"
+              >
+                {promptCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {promptCopied ? 'Copied!' : 'Copy Prompt'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Step 2 */}
       <StepCard
@@ -366,12 +452,11 @@ Allow: /`
         stepNumber={3}
         icon="🎯"
         title="Get cited by AI agents"
-        subtitle="Upload these files and start appearing in AI recommendations"
+        subtitle="Upload this page and start appearing in AI recommendations"
         isComplete={step3Complete}
       >
         <GeneratedPagePreviewWithTracking 
           result={result}
-          robotsTxt={robotsTxt}
           onDownload={() => {
             setHtmlDownloaded(true)
             localStorage.setItem(`aeo-html-${result.businessName}`, 'true')
@@ -384,11 +469,9 @@ Allow: /`
 
 function GeneratedPagePreviewWithTracking({ 
   result, 
-  robotsTxt,
   onDownload 
 }: { 
   result: AnalysisResult
-  robotsTxt: string
   onDownload: () => void 
 }) {
   return (
@@ -398,7 +481,7 @@ function GeneratedPagePreviewWithTracking({
         setTimeout(onDownload, 100)
       }
     }}>
-      <GeneratedPagePreview result={result} robotsTxt={robotsTxt} />
+      <GeneratedPagePreview result={result} />
     </div>
   )
 }
