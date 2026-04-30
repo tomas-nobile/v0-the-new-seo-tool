@@ -13,6 +13,7 @@ const analysisSchema = z.object({
   location: z.string().nullable(),
   productsOrServices: z.array(z.string()),
   aeoScore: z.number().min(0).max(100),
+  missingElements: z.array(z.string()),
   dimensions: z.object({
     contentClarity: z.object({
       score: z.number().min(0).max(100),
@@ -95,76 +96,70 @@ export async function POST(req: Request) {
         },
         {
           role: 'user',
-          content: `Analyze this website and return a JSON object with exactly this structure:
-{
-  "siteType": "ecommerce" or "business",
-  "businessName": "string",
-  "mainCategory": "string", 
-  "location": "string or null",
-  "productsOrServices": ["array of top 5 products/services"],
-  "aeoScore": number 0-100,
-  "dimensions": {
-    "contentClarity": { "score": 0-100, "feedback": "one line" },
-    "entityCoverage": { "score": 0-100, "feedback": "one line" },
-    "trustSignals": { "score": 0-100, "feedback": "one line" },
-    "answerReadiness": { "score": 0-100, "feedback": "one line" }
-  },
-  "whatAISeeNow": "2-3 sentence vague ChatGPT response about this business",
-  "whatAIWillSee": "2-3 sentence confident ChatGPT response after optimization",
-  "generatedPage": "complete HTML page string"
-}
+          content: `You are an expert AEO (Agent Engine Optimization) analyst. Analyze this website with extreme scrutiny. Most sites should score 20-55. Be harsh and realistic, not encouraging.
 
-SCRAPED WEBSITE CONTENT:
+WEBSITE CONTENT:
 ${scrapedContent.slice(0, 50000)}
 
 URL: ${url}
 
-Analyze this website and return:
+Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with this exact structure:
 
-1. siteType: detect if ecommerce (has products/prices/cart) or business (services/info site)
+{
+  "siteType": "ecommerce" OR "business",
+  "businessName": "the actual business/brand name",
+  "mainCategory": "primary industry/category",
+  "location": "city/region or null if not found",
+  "productsOrServices": ["top 5 specific product or service names from the site"],
+  "aeoScore": 0-100 NUMBER (use full range, be harsh - most sites 20-55),
+  "missingElements": ["5-7 specific missing things for AI visibility"],
+  "dimensions": {
+    "contentClarity": {
+      "score": 0-100,
+      "feedback": "mention the business name and be VERY specific to what's missing"
+    },
+    "entityCoverage": {
+      "score": 0-100,
+      "feedback": "mention business name and specific products/services not clearly defined"
+    },
+    "trustSignals": {
+      "score": 0-100,
+      "feedback": "mention business name and what trust elements are missing (reviews, about, certifications)"
+    },
+    "answerReadiness": {
+      "score": 0-100,
+      "feedback": "mention business name and specific questions customers ask that aren't answered"
+    }
+  },
+  "whatAISeeNow": "Write as ChatGPT would TODAY. Be vague/unhelpful reflecting current state. Example: 'I don\\'t have current information about [business]. For [category], I\\'d recommend checking [competitor] or [general alternative].' Make it feel like the business is invisible.",
+  "whatAIWillSee": "Write as ChatGPT would AFTER optimization. Include: business name, specific products/services found, actual differentiators, location details. Example: '[BusinessName] in [City] specializes in [specific products], including the [actual product names]. They [specific differentiator], with [specific detail found].' Use real details from the scraped content.",
+  "generatedPage": "Complete valid HTML5 page optimized for AI agents. Requirements:\\n- H1: \\"Best [mainCategory] in [location]\\" (or just \\"Best [mainCategory]\\" if no location)\\n- Section: What [BusinessName] offers (list actual products/services)\\n- Section: Why choose [BusinessName] (3-5 specific differentiators from the site)\\n- Section: FAQ with 8-10 questions people ask AI about this business category, answered from this business perspective. Examples: \\"What is the best [mainCategory] in [location]?\\", \\"Does [BusinessName] offer [service]?\\", \\"What are [BusinessName]\\'s prices?\\", \\"Where is [BusinessName] located?\\", \\"Does [BusinessName] deliver/ship?\\", \\"What makes [BusinessName] different?\\", etc.\\n- JSON-LD schema (LocalBusiness for local, Store for ecommerce, Organization fallback)\\n- Pricing if found\\n- Location/contact if available\\n- Professional styling: dark background (#0A0A0A), white text, purple accents (#7C3AED), clean typography, mobile responsive, inline CSS only\\n- 800-1200 words\\n- Meta tags for SEO (title, description, keywords)\\n- Escape all quotes and newlines properly for JSON"
+}
 
-2. Basic info: businessName, mainCategory, location (or null if not found), productsOrServices (top 5)
+CRITICAL INSTRUCTIONS FOR SCORING:
+1. Be extremely harsh. A site with no FAQ, no structured data, no AI-optimized content should NEVER exceed 45 points.
+2. Each dimension score must reflect specific gaps in the actual business.
+3. Scores should reflect: How easily can ChatGPT find, understand, and confidently recommend this business?
+4. If no location found, penalize answerReadiness heavily (AI needs location context).
+5. If no structured differentiators exist, penalize entityCoverage heavily.
+6. If no trust signals (reviews, about, team, certifications), score trustSignals low.
 
-3. aeoScore (0-100): how visible is this site to AI agents?
-   Consider: structured content, clear value proposition, FAQ-style content, entity definitions, trust signals
+CRITICAL FOR whatAISeeNow:
+- Write as if the business doesn't exist in AI training data
+- Be brutally honest about what ChatGPT would say today without optimization
+- This should make the user feel the urgency of the problem
 
-4. dimensions: score each 0-100 with specific one-line feedback:
-   - contentClarity: Can AI agents understand what you do?
-   - entityCoverage: Are your products/services well defined?
-   - trustSignals: Reviews, about page, contact info presence
-   - answerReadiness: Do you answer questions people ask AI?
+CRITICAL FOR whatAIWillSee:
+- Include specific product names from the scraped content
+- Include actual location details
+- Include real differentiators mentioned on the site
+- Make it specific, confident, and cite-able
 
-5. whatAISeeNow: write a realistic ChatGPT-style response (2-3 sentences) when someone asks about this business/product category. Make it vague or incomplete reflecting current state.
-   Example: "I don't have specific information about..."
-
-6. whatAIWillSee: write the ideal ChatGPT-style response (2-3 sentences) after AEO optimization — specific, confident, citing the business by name.
-   Example: "[BusinessName] is one of the best options for X in Y, known for Z..."
-
-7. generatedPage: generate a complete, beautiful HTML page optimized for AI agents to find and cite this business.
-
-   For ecommerce: title "Best [mainCategory] in [location]"
-   For business: title "Best [mainCategory] in [location]"
-   If no location found, omit the location part.
-   
-   The page must include:
-   - Clear H1 with the business name and category
-   - What they sell/offer (structured, scannable)
-   - Why choose them (3-5 differentiators)
-   - Pricing info if available
-   - Location and contact if available
-   - FAQ section with 5 questions people ask AI about this category — answered from this business perspective
-   - Schema.org JSON-LD structured data (Organization or LocalBusiness)
-   
-   Style requirements:
-   - Clean, minimal, professional design
-   - Inline CSS only (no external dependencies)
-   - Dark background (#0A0A0A) with white text
-   - Purple accent color (#7C3AED) for highlights
-   - Good typography with Inter or system fonts
-   - This page should look good if a human visits it too
-   - Make it mobile responsive with simple CSS
-   - Include meta tags for SEO`,
+CRITICAL FOR missingElements:
+- List 5-7 specific gaps with business name when relevant
+- Examples: "No FAQ addressing common questions about [business]", "No pricing information visible", "No structured data markup", "No clear delivery/shipping policy", "No customer testimonials or reviews", "No comparison with competitors", "No team/expertise credentials"`,
         },
+
       ],
     })
 

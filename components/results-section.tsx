@@ -4,6 +4,7 @@ import { SiteDetectionBanner } from '@/components/site-detection-banner'
 import { AeoScoreCard } from '@/components/aeo-score-card'
 import { BeforeAfterComparison } from '@/components/before-after-comparison'
 import { GeneratedPagePreview } from '@/components/generated-page-preview'
+import { MissingElements } from '@/components/missing-elements'
 import type { AnalysisResult } from '@/lib/types'
 
 interface ResultsSectionProps {
@@ -19,18 +20,23 @@ export function ResultsSection({ result }: ResultsSectionProps) {
           <SiteDetectionBanner result={result} />
         </div>
 
-        {/* Section 2: AEO Score */}
+        {/* Section 2: Missing Elements */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+          <MissingElements elements={result.missingElements} />
+        </div>
+
+        {/* Section 3: AEO Score */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
           <AeoScoreCard result={result} />
         </div>
 
-        {/* Section 3: Before/After AI Response */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+        {/* Section 4: Before/After AI Response */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-450">
           <BeforeAfterComparison result={result} />
         </div>
 
-        {/* Section 4: Generated Page Preview */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
+        {/* Section 5: Generated Page Preview */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
           <GeneratedPagePreview result={result} />
         </div>
       </div>

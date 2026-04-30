@@ -5,6 +5,7 @@ export interface AnalysisResult {
   location: string | null
   productsOrServices: string[]
   aeoScore: number
+  missingElements: string[]
   dimensions: {
     contentClarity: {
       score: number
