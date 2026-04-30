@@ -1,13 +1,12 @@
 'use client'
 
-import { AlertCircle, CheckCircle2 } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
 
 interface MissingElementsProps {
   elements?: string[] | null
 }
 
 export function MissingElements({ elements }: MissingElementsProps) {
-  // Handle undefined, null, or non-array values
   const safeElements = Array.isArray(elements) ? elements : []
   
   if (safeElements.length === 0) {
@@ -15,51 +14,25 @@ export function MissingElements({ elements }: MissingElementsProps) {
   }
 
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-6 mb-8">
-        <div className="flex items-start gap-3 mb-4">
-          <AlertCircle className="w-5 h-5 text-red-400 mt-1 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-red-300 mb-3">What&apos;s Missing for AI Visibility</h3>
-            <ul className="space-y-2">
-              {safeElements.map((element, idx) => (
-                <li key={idx} className="flex items-start gap-3 text-sm text-red-200">
-                  <span className="text-red-400 mt-1">✗</span>
-                  <span>{element}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+    <div className="bg-destructive/10 border border-destructive/25 rounded-2xl p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <div className="w-10 h-10 rounded-xl bg-destructive/15 flex items-center justify-center">
+          <AlertTriangle className="w-5 h-5 text-destructive" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-foreground">Missing for AI visibility</h3>
+          <p className="text-sm text-muted-foreground">Add these to improve your score</p>
         </div>
       </div>
-
-      <div className="bg-green-900/20 border border-green-700/50 rounded-lg p-6">
-        <div className="flex items-start gap-3 mb-4">
-          <CheckCircle2 className="w-5 h-5 text-green-400 mt-1 flex-shrink-0" />
-          <div>
-            <h3 className="font-semibold text-green-300 mb-3">What You'll Gain with Optimization</h3>
-            <ul className="space-y-2 text-sm text-green-200">
-              <li className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>AI agents will find and cite your business with confidence</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Recommendations will include specific products/services and differentiators</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Customer questions will be answered directly from your content</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-green-400">✓</span>
-                <span>Higher visibility in LLM-generated content and recommendations</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      
+      <ul className="grid sm:grid-cols-2 gap-3">
+        {safeElements.map((element, idx) => (
+          <li key={idx} className="flex items-start gap-3 text-sm bg-destructive/5 rounded-lg px-4 py-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-destructive mt-2 flex-shrink-0" />
+            <span className="text-foreground">{element}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
-

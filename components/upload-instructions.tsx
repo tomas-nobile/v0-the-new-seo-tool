@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy, ExternalLink, AlertCircle, CheckCircle2, Sparkles, FileCode, Bot, Send, Loader2 } from 'lucide-react'
+import { Copy, ExternalLink, CheckCircle2, Sparkles, FileCode, Bot, Send, Loader2, FolderOpen, Globe } from 'lucide-react'
 
 interface UploadInstructionsProps {
   businessName: string
@@ -27,6 +27,8 @@ export function UploadInstructions({
   const [isLoading, setIsLoading] = useState(false)
   const responseRef = useRef<HTMLDivElement>(null)
 
+  const suggestedEndpoint = `/best-${businessName.toLowerCase().replace(/\s+/g, '-')}`
+
   const handleAskAI = async () => {
     if (!hosting.trim()) return
     setIsLoading(true)
@@ -50,17 +52,15 @@ export function UploadInstructions({
         setAiResponse(prev => prev + decoder.decode(value, { stream: true }))
         responseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
       }
-    } catch (e) {
+    } catch {
       setAiResponse('Sorry, something went wrong. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const suggestedEndpoint = `/best-${businessName.toLowerCase().replace(/\s+/g, '-')}`
-
   const copyEndpoint = async () => {
-    await navigator.clipboard.writeText(suggestedEndpoint)
+    await navigator.clipboard.writeText(suggestedEndpoint + '.html')
     setCopiedEndpoint(true)
     setTimeout(() => setCopiedEndpoint(false), 2000)
   }
@@ -73,83 +73,75 @@ export function UploadInstructions({
   const manualInstructions = {
     cpanel: {
       title: 'cPanel / Plesk',
+      icon: FolderOpen,
       steps: [
-        'Log in to your hosting control panel (cPanel or Plesk)',
-        'Look for "File Manager" in the main menu',
-        'Navigate to the public_html/ folder (or www/ or htdocs/)',
-        `Click "Upload" and select the downloaded ${filename} file`,
-        `Rename the file to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
-        'Done! Your AEO page is now live',
+        'Log in to your hosting control panel',
+        'Open "File Manager"',
+        'Navigate to public_html/ (or www/)',
+        `Upload ${filename}`,
+        `Rename to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
       ],
     },
     ftp: {
       title: 'FTP Client',
+      icon: Globe,
       steps: [
-        'Open your FTP client (FileZilla, WinSCP, Transmit, Cyberduck)',
-        'Connect using your FTP credentials from your hosting provider',
-        'Navigate to the root folder (public_html/ or www/)',
-        `Upload the ${filename} file`,
-        `Rename it to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
-        'Done! Your AEO page is now live',
+        'Open FileZilla, WinSCP, or Cyberduck',
+        'Connect with your FTP credentials',
+        'Navigate to the root folder',
+        `Upload ${filename}`,
+        `Rename to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
       ],
     },
     wordpress: {
       title: 'WordPress',
+      icon: FileCode,
       steps: [
-        'Go to WordPress Admin → Plugins → Add New',
-        'Search and install "File Manager" plugin (by mndpsingh287)',
-        'Activate the plugin and go to WP File Manager',
-        'Navigate to the root folder (usually public_html/)',
-        `Upload the ${filename} file and rename it to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
-        'Done! Your AEO page is now live',
+        'Install "File Manager" plugin',
+        'Go to WP File Manager',
+        'Navigate to root (public_html/)',
+        `Upload ${filename}`,
+        `Rename to: best-${businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
       ],
     },
   }
 
   const currentManual = manualInstructions[manualMethod]
+  const CurrentIcon = currentManual.icon
 
   return (
     <div className="space-y-6">
       {/* Suggested Endpoint */}
-      <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-        <div className="flex items-center gap-2 mb-2">
+      <div className="bg-primary/10 border border-primary/25 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
           <FileCode className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-foreground">Suggested endpoint</span>
+          <span className="font-semibold text-foreground">Recommended URL</span>
         </div>
         <div className="flex gap-2">
-          <code className="flex-1 bg-card border border-border rounded px-3 py-2 text-sm font-mono text-primary">
+          <code className="flex-1 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-mono text-primary truncate">
             {suggestedEndpoint}.html
           </code>
           <Button
             variant="outline"
             size="sm"
             onClick={copyEndpoint}
-            className="gap-2"
+            className="gap-2 px-4"
           >
-            {copiedEndpoint ? (
-              <>
-                <CheckCircle2 className="w-4 h-4" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy className="w-4 h-4" />
-                Copy
-              </>
-            )}
+            {copiedEndpoint ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copiedEndpoint ? 'Copied!' : 'Copy'}
           </Button>
         </div>
-        <p className="text-sm text-muted-foreground mt-2">
-          This URL is optimized for AI agents searching for "{businessName}"
+        <p className="text-sm text-muted-foreground mt-3">
+          This URL is optimized for AI searches about "{businessName}"
         </p>
       </div>
 
-      {/* Method Toggle: Manual vs AI */}
-      <div className="flex gap-2">
+      {/* Method Toggle */}
+      <div className="grid grid-cols-2 gap-3">
         <Button
           variant={method === 'manual' ? 'secondary' : 'outline'}
           onClick={() => setMethod('manual')}
-          className="gap-2 flex-1"
+          className="gap-2 h-12"
         >
           <FileCode className="w-4 h-4" />
           Upload manually
@@ -157,72 +149,75 @@ export function UploadInstructions({
         <Button
           variant={method === 'ai' ? 'secondary' : 'outline'}
           onClick={() => setMethod('ai')}
-          className="gap-2 flex-1"
+          className="gap-2 h-12"
         >
           <Bot className="w-4 h-4" />
-          Get help from AI
+          Get AI help
         </Button>
       </div>
 
       {method === 'manual' ? (
         <>
           {/* Manual Method Tabs */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2">
             {(['cpanel', 'ftp', 'wordpress'] as const).map((m) => (
               <Button
                 key={m}
                 variant={manualMethod === m ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setManualMethod(m)}
+                className="text-sm"
               >
-                {m === 'cpanel' && 'cPanel / Plesk'}
-                {m === 'ftp' && 'FTP Client'}
+                {m === 'cpanel' && 'cPanel'}
+                {m === 'ftp' && 'FTP'}
                 {m === 'wordpress' && 'WordPress'}
               </Button>
             ))}
           </div>
 
-          {/* Current Manual Instructions */}
-          <div className="bg-card border border-border rounded-lg p-6 space-y-4">
-            <h4 className="font-semibold text-lg">{currentManual.title}</h4>
+          {/* Instructions */}
+          <div className="bg-card border border-border rounded-xl p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                <CurrentIcon className="w-5 h-5 text-primary" />
+              </div>
+              <h4 className="font-semibold text-lg text-foreground">{currentManual.title}</h4>
+            </div>
             
             <ol className="space-y-3">
               {currentManual.steps.map((step, idx) => (
                 <li key={idx} className="flex gap-3">
-                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-sm font-semibold">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/15 text-primary flex items-center justify-center text-sm font-semibold">
                     {idx + 1}
                   </span>
-                  <span className="text-foreground leading-relaxed">{step}</span>
+                  <span className="text-foreground leading-relaxed pt-0.5">{step}</span>
                 </li>
               ))}
             </ol>
           </div>
         </>
       ) : (
-        <>
-          {/* AI Help Section */}
-          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
-            <div className="flex items-center gap-2">
-              <Bot className="w-5 h-5 text-primary" />
-              <span className="font-semibold text-foreground">Tell us about your setup</span>
-            </div>
+        <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-foreground">Tell us about your setup</span>
+          </div>
 
-            {/* Input 1: Hosting */}
-            <div className="space-y-1.5">
+          <div className="space-y-4">
+            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
-                Your hosting provider <span className="text-red-400">*</span>
+                Hosting provider <span className="text-destructive">*</span>
               </label>
               <input
                 type="text"
                 value={hosting}
                 onChange={e => setHosting(e.target.value)}
-                placeholder="e.g. Hostinger, GoDaddy, SiteGround, WooCommerce, Shopify..."
-                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
+                placeholder="Hostinger, GoDaddy, SiteGround..."
+                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
               />
             </div>
 
-            {/* Input 2: Tech Stack (optional) */}
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">
                 How is your page built?{' '}
                 <span className="text-muted-foreground font-normal">(optional)</span>
@@ -231,80 +226,67 @@ export function UploadInstructions({
                 type="text"
                 value={techStack}
                 onChange={e => setTechStack(e.target.value)}
-                placeholder="e.g. WordPress, Wix, custom HTML, Webflow, I don't know..."
-                className="w-full bg-background border border-border rounded-lg px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition"
+                placeholder="WordPress, Wix, custom HTML..."
+                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
               />
             </div>
+          </div>
 
-            <Button
-              onClick={handleAskAI}
-              disabled={!hosting.trim() || isLoading}
-              className="w-full gap-2 bg-primary hover:bg-primary/90"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Getting instructions...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  Get my upload instructions
-                </>
-              )}
-            </Button>
+          <Button
+            onClick={handleAskAI}
+            disabled={!hosting.trim() || isLoading}
+            className="w-full gap-2 h-12 bg-primary hover:bg-primary/90"
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Getting instructions...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4" />
+                Get my instructions
+              </>
+            )}
+          </Button>
 
-            {/* Streaming AI Response */}
-            {(aiResponse || isLoading) && (
-              <div className="bg-background border border-primary/30 rounded-lg p-5 space-y-2" ref={responseRef}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">Upload instructions for you</span>
-                </div>
-                <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
-                  {aiResponse}
-                  {isLoading && (
-                    <span className="inline-block w-2 h-4 bg-primary/60 ml-0.5 animate-pulse rounded-sm" />
-                  )}
-                </div>
-                {aiResponse && !isLoading && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-2 gap-2 text-muted-foreground"
-                    onClick={async () => {
-                      await navigator.clipboard.writeText(aiResponse)
-                      setCopied(true)
-                      setTimeout(() => setCopied(false), 2000)
-                    }}
-                  >
-                    {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied!' : 'Copy instructions'}
-                  </Button>
+          {(aiResponse || isLoading) && (
+            <div className="bg-background border border-primary/25 rounded-xl p-5" ref={responseRef}>
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold text-primary">Your upload instructions</span>
+              </div>
+              <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                {aiResponse}
+                {isLoading && (
+                  <span className="inline-block w-2 h-5 bg-primary/50 ml-1 animate-pulse rounded-sm" />
                 )}
               </div>
-            )}
-          </div>
-        </>
-      )}
-
-      {/* Info Box */}
-      <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 flex gap-3">
-        <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-        <div className="text-sm text-yellow-200">
-          <strong>Need more help?</strong>
-          <p className="mt-1">
-            Forward the downloaded file to your web developer or hosting provider. Ask them to upload it
-            to the root of your website at <code className="text-yellow-300">{suggestedEndpoint}.html</code>
-          </p>
+              {aiResponse && !isLoading && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-4 gap-2 text-muted-foreground"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(aiResponse)
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  }}
+                >
+                  {copied ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Test Button */}
       <Button
         onClick={handleTest}
-        variant="secondary"
-        className="w-full gap-2"
+        variant="outline"
+        className="w-full gap-2 h-12"
       >
         <ExternalLink className="w-4 h-4" />
         Test if your page is live

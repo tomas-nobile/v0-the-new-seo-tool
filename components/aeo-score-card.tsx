@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/types'
 
 interface AeoScoreCardProps {
@@ -25,11 +26,19 @@ function getBarColor(score: number): string {
   return 'bg-success'
 }
 
+function getScoreLabel(score: number): { label: string; icon: typeof TrendingUp } {
+  if (score <= 30) return { label: 'Critical', icon: TrendingDown }
+  if (score <= 50) return { label: 'Needs Work', icon: TrendingDown }
+  if (score <= 70) return { label: 'Getting There', icon: Minus }
+  if (score <= 85) return { label: 'Good', icon: TrendingUp }
+  return { label: 'Excellent', icon: TrendingUp }
+}
+
 const dimensions = [
-  { key: 'contentClarity', label: 'Content Clarity', description: 'Can AI agents understand what you do?' },
-  { key: 'entityCoverage', label: 'Entity Coverage', description: 'Are your products/services well defined?' },
-  { key: 'trustSignals', label: 'Trust Signals', description: 'Reviews, about page, contact info' },
-  { key: 'answerReadiness', label: 'Answer Readiness', description: 'Do you answer questions people ask AI?' },
+  { key: 'contentClarity', label: 'Content Clarity', icon: '📝' },
+  { key: 'entityCoverage', label: 'Entity Coverage', icon: '🏷️' },
+  { key: 'trustSignals', label: 'Trust Signals', icon: '✅' },
+  { key: 'answerReadiness', label: 'Answer Readiness', icon: '💬' },
 ] as const
 
 export function AeoScoreCard({ result }: AeoScoreCardProps) {
@@ -42,7 +51,6 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
   })
 
   useEffect(() => {
-    // Animate main score
     const scoreInterval = setInterval(() => {
       setAnimatedScore((prev) => {
         if (prev >= result.aeoScore) {
@@ -51,9 +59,8 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
         }
         return prev + 1
       })
-    }, 20)
+    }, 15)
 
-    // Animate dimension scores
     const dimensionIntervals = dimensions.map((dim) => {
       return setInterval(() => {
         setAnimatedDimensions((prev) => {
@@ -63,7 +70,7 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
           }
           return { ...prev, [dim.key]: prev[dim.key] + 1 }
         })
-      }, 25)
+      }, 20)
     })
 
     return () => {
@@ -74,72 +81,106 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
 
   const circumference = 2 * Math.PI * 45
   const strokeDashoffset = circumference - (animatedScore / 100) * circumference
+  const scoreInfo = getScoreLabel(result.aeoScore)
+  const ScoreIcon = scoreInfo.icon
 
   return (
-    <div className="bg-card border border-border rounded-xl p-8">
-      <h3 className="text-xl font-semibold mb-8">AI Visibility Score</h3>
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* Header */}
+      <div className="px-6 py-4 border-b border-border bg-secondary/30">
+        <h3 className="text-lg font-semibold text-foreground">AI Visibility Score</h3>
+        <p className="text-sm text-muted-foreground">How well AI agents understand your business</p>
+      </div>
 
-      <div className="flex flex-col lg:flex-row gap-12">
-        {/* Circular Score */}
-        <div className="flex flex-col items-center">
-          <div className="relative w-40 h-40">
-            <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="8"
-                className="text-secondary"
-              />
-              <circle
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                strokeWidth="8"
-                strokeLinecap="round"
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                className={`${getScoreStrokeColor(result.aeoScore)} transition-all duration-1000`}
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-5xl font-bold ${getScoreColor(result.aeoScore)}`}>
-                {animatedScore}
-              </span>
-              <span className="text-muted-foreground text-sm">out of 100</span>
+      <div className="p-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Circular Score */}
+          <div className="flex flex-col items-center lg:items-start">
+            <div className="relative w-44 h-44">
+              {/* Background glow */}
+              <div className={`absolute inset-4 rounded-full blur-xl opacity-30 ${
+                result.aeoScore <= 40 ? 'bg-destructive' : 
+                result.aeoScore <= 70 ? 'bg-warning' : 'bg-success'
+              }`} />
+              
+              <svg className="w-full h-full -rotate-90 relative z-10" viewBox="0 0 100 100">
+                {/* Track */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="6"
+                  className="text-secondary"
+                />
+                {/* Progress */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="45"
+                  fill="none"
+                  strokeWidth="6"
+                  strokeLinecap="round"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  className={`${getScoreStrokeColor(result.aeoScore)} transition-all duration-700 ease-out`}
+                />
+              </svg>
+              
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
+                <span className={`text-5xl font-bold tabular-nums ${getScoreColor(result.aeoScore)}`}>
+                  {animatedScore}
+                </span>
+                <span className="text-muted-foreground text-sm mt-1">/ 100</span>
+              </div>
+            </div>
+
+            {/* Score label */}
+            <div className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-full ${
+              result.aeoScore <= 40 ? 'bg-destructive/10 text-destructive' :
+              result.aeoScore <= 70 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
+            }`}>
+              <ScoreIcon className="w-4 h-4" />
+              <span className="text-sm font-semibold">{scoreInfo.label}</span>
             </div>
           </div>
-        </div>
 
-        {/* Dimension Bars */}
-        <div className="flex-1 space-y-6">
-          {dimensions.map((dim) => {
-            const score = result.dimensions[dim.key].score
-            const feedback = result.dimensions[dim.key].feedback
-            const animatedValue = animatedDimensions[dim.key]
+          {/* Dimension Bars */}
+          <div className="flex-1 space-y-5">
+            {dimensions.map((dim, idx) => {
+              const score = result.dimensions[dim.key].score
+              const feedback = result.dimensions[dim.key].feedback
+              const animatedValue = animatedDimensions[dim.key]
 
-            return (
-              <div key={dim.key}>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <span className="font-medium">{dim.label}</span>
-                    <span className="text-muted-foreground text-sm ml-2">— {dim.description}</span>
+              return (
+                <div 
+                  key={dim.key}
+                  className="animate-fade-in-up"
+                  style={{ animationDelay: `${idx * 100}ms` }}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">{dim.icon}</span>
+                      <span className="font-medium text-foreground">{dim.label}</span>
+                    </div>
+                    <span className={`text-sm font-bold tabular-nums ${getScoreColor(score)}`}>
+                      {animatedValue}%
+                    </span>
                   </div>
-                  <span className={`font-semibold ${getScoreColor(score)}`}>{animatedValue}</span>
+                  
+                  <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor(score)}`}
+                      style={{ width: `${animatedValue}%` }}
+                    />
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{feedback}</p>
                 </div>
-                <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-1000 ${getBarColor(score)}`}
-                    style={{ width: `${animatedValue}%` }}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">{feedback}</p>
-              </div>
-            )
-          })}
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>
