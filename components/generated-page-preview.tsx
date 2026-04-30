@@ -119,17 +119,15 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
         </div>
       </div>
 
-      {/* Upload Instructions */}
-      {hasDownloaded && (
-        <div className="border-t border-border pt-8">
-          <h3 className="text-xl font-semibold mb-6">How to upload your page</h3>
-          <UploadInstructions
-            businessName={result.businessName}
-            businessUrl={businessUrl}
-            filename={filename}
-          />
-        </div>
-      )}
+      {/* Upload Instructions - Always visible */}
+      <div className="border-t border-border pt-8">
+        <h3 className="text-xl font-semibold mb-6">How to upload your page</h3>
+        <UploadInstructions
+          businessName={result.businessName}
+          businessUrl={businessUrl}
+          filename={filename}
+        />
+      </div>
     </div>
   )
 }

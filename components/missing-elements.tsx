@@ -7,8 +7,10 @@ interface MissingElementsProps {
 }
 
 export function MissingElements({ elements }: MissingElementsProps) {
-  // Handle undefined or empty arrays
-  if (!elements || elements.length === 0) {
+  // Handle undefined, null, or non-array values
+  const safeElements = Array.isArray(elements) ? elements : []
+  
+  if (safeElements.length === 0) {
     return null
   }
 
@@ -20,7 +22,7 @@ export function MissingElements({ elements }: MissingElementsProps) {
           <div>
             <h3 className="font-semibold text-red-300 mb-3">What&apos;s Missing for AI Visibility</h3>
             <ul className="space-y-2">
-              {elements.map((element, idx) => (
+              {safeElements.map((element, idx) => (
                 <li key={idx} className="flex items-start gap-3 text-sm text-red-200">
                   <span className="text-red-400 mt-1">✗</span>
                   <span>{element}</span>

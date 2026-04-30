@@ -19,7 +19,6 @@ export function UploadInstructions({
 }: UploadInstructionsProps) {
   const [method, setMethod] = useState<'cpanel' | 'ftp' | 'wordpress'>('cpanel')
   const [copied, setCopied] = useState(false)
-  const [hasDownloaded, setHasDownloaded] = useState(false)
 
   const livePageUrl = `${businessUrl}${filename.startsWith('/') ? '' : '/'}${filename}`
 
@@ -150,16 +149,14 @@ export function UploadInstructions({
       </div>
 
       {/* Test Button */}
-      {hasDownloaded && (
-        <Button
-          onClick={handleTest}
-          variant="secondary"
-          className="w-full gap-2"
-        >
-          <ExternalLink className="w-4 h-4" />
-          Test if your page is live
-        </Button>
-      )}
+      <Button
+        onClick={handleTest}
+        variant="secondary"
+        className="w-full gap-2"
+      >
+        <ExternalLink className="w-4 h-4" />
+        Test if your page is live
+      </Button>
     </div>
   )
 }
