@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Copy, Download, Check, Code, Eye } from 'lucide-react'
+import { Copy, Download, Check, Code, Eye, FileCode } from 'lucide-react'
 import { UploadInstructions } from '@/components/upload-instructions'
 import { getTranslation, type DetectedLanguage } from '@/lib/i18n'
 import type { AnalysisResult } from '@/lib/types'
@@ -13,10 +13,12 @@ interface GeneratedPagePreviewProps {
 
 export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
   const [copied, setCopied] = useState(false)
+  const [copiedEndpoint, setCopiedEndpoint] = useState(false)
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview')
   const lang = (result.detectedLanguage || 'en') as DetectedLanguage
   const filename = `${result.businessName.toLowerCase().replace(/\s+/g, '-')}-aeo-page.html`
   const businessUrl = new URL(window.location.href).origin
+  const suggestedEndpoint = `/best-${result.businessName.toLowerCase().replace(/\s+/g, '-')}`
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(result.generatedPage)
@@ -36,8 +38,39 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
     URL.revokeObjectURL(url)
   }
 
+  const copyEndpoint = async () => {
+    await navigator.clipboard.writeText(suggestedEndpoint + '.html')
+    setCopiedEndpoint(true)
+    setTimeout(() => setCopiedEndpoint(false), 2000)
+  }
+
   return (
     <div className="space-y-8">
+      {/* Recommended URL */}
+      <div className="bg-primary/10 border border-primary/25 rounded-xl p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <FileCode className="w-5 h-5 text-primary" />
+          <span className="font-semibold text-foreground">Recommended URL</span>
+        </div>
+        <div className="flex gap-2">
+          <code className="flex-1 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-mono text-primary truncate">
+            {suggestedEndpoint}.html
+          </code>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={copyEndpoint}
+            className="gap-2 px-4"
+          >
+            {copiedEndpoint ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            {copiedEndpoint ? 'Copied!' : 'Copy'}
+          </Button>
+        </div>
+        <p className="text-sm text-muted-foreground mt-3">
+          This URL is optimized for AI searches about "{result.businessName}"
+        </p>
+      </div>
+
       {/* Download Card */}
       <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

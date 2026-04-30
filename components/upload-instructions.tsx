@@ -20,10 +20,6 @@ export function UploadInstructions({
   const [method, setMethod] = useState<'manual' | 'ai'>('manual')
   const [manualMethod, setManualMethod] = useState<'cpanel' | 'ftp' | 'wordpress'>('cpanel')
   const [copied, setCopied] = useState(false)
-  const [copiedEndpoint, setCopiedEndpoint] = useState(false)
-  const [hosting, setHosting] = useState('')
-  const [techStack, setTechStack] = useState('')
-  const [aiResponse, setAiResponse] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const responseRef = useRef<HTMLDivElement>(null)
 
@@ -61,8 +57,8 @@ export function UploadInstructions({
 
   const copyEndpoint = async () => {
     await navigator.clipboard.writeText(suggestedEndpoint + '.html')
-    setCopiedEndpoint(true)
-    setTimeout(() => setCopiedEndpoint(false), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const handleTest = () => {
@@ -111,31 +107,6 @@ export function UploadInstructions({
 
   return (
     <div className="space-y-6">
-      {/* Suggested Endpoint */}
-      <div className="bg-primary/10 border border-primary/25 rounded-xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <FileCode className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-foreground">Recommended URL</span>
-        </div>
-        <div className="flex gap-2">
-          <code className="flex-1 bg-background border border-border rounded-lg px-4 py-2.5 text-sm font-mono text-primary truncate">
-            {suggestedEndpoint}.html
-          </code>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={copyEndpoint}
-            className="gap-2 px-4"
-          >
-            {copiedEndpoint ? <CheckCircle2 className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-            {copiedEndpoint ? 'Copied!' : 'Copy'}
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground mt-3">
-          This URL is optimized for AI searches about "{businessName}"
-        </p>
-      </div>
-
       {/* Method Toggle */}
       <div className="grid grid-cols-2 gap-3">
         <Button
