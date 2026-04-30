@@ -1,3 +1,17 @@
+export interface ActionItem {
+  priority: 'QUICK WIN' | 'THIS WEEK' | 'LONG TERM'
+  difficulty: 'Easy' | 'Medium' | 'Hard'
+  action: string
+  impact: string
+}
+
+export interface AICrawlerStatus {
+  gptbot: boolean
+  claudebot: boolean
+  perplexitybot: boolean
+  googlebot: boolean
+}
+
 export interface AnalysisResult {
   siteType: 'ecommerce' | 'business'
   businessName: string
@@ -27,4 +41,7 @@ export interface AnalysisResult {
   whatAISeeNow: string
   whatAIWillSee: string
   generatedPage: string
+  actionPlan: ActionItem[]
+  aiCrawlerStatus: AICrawlerStatus
+  quickWinsCount: number
 }

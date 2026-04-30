@@ -6,6 +6,138 @@ const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
 })
 
+// Function to check AI crawler status from robots.txt
+async function checkAICrawlerStatus(url: string) {
+  try {
+    const parsedUrl = new URL(url)
+    const robotsUrl = `${parsedUrl.protocol}//${parsedUrl.hostname}/robots.txt`
+    
+    const response = await fetch(robotsUrl, { timeout: 5000 })
+    if (!response.ok) {
+      // If no robots.txt exists, all bots are allowed by default
+      return {
+        gptbot: true,
+        claudebot: true,
+        perplexitybot: true,
+        googlebot: true,
+      }
+    }
+    
+    const robotsContent = await response.text()
+    
+    // Simple parser: check if each bot is explicitly disallowed
+    const isBlocked = (botName: string) => {
+      const regex = new RegExp(`User-agent:\\s*${botName}[\\s\\S]*?(?=User-agent:|$)`, 'i')
+      const section = robotsContent.match(regex)?.[0] || ''
+      return /Disallow:\s*\/\s*$/m.test(section)
+    }
+    
+    return {
+      gptbot: !isBlocked('GPTBot'),
+      claudebot: !isBlocked('ClaudeBot'),
+      perplexitybot: !isBlocked('PerplexityBot'),
+      googlebot: !isBlocked('GoogleBot'),
+    }
+  } catch {
+    // If fetch fails, assume all bots are allowed
+    return {
+      gptbot: true,
+      claudebot: true,
+      perplexitybot: true,
+      googlebot: true,
+    }
+  }
+}
+
+// Function to generate action plan based on analysis
+function generateActionPlan(result: any, url: string): { actions: any[], quickWinsCount: number } {
+  const actions = []
+  
+  // QUICK WINS
+  if (!result.generatedPage) {
+    actions.push({
+      priority: 'QUICK WIN',
+      difficulty: 'Easy',
+      action: `Upload the generated HTML page to your website at /${result.businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
+      impact: 'AI agents will find and cite this page immediately',
+    })
+  }
+  
+  actions.push({
+    priority: 'QUICK WIN',
+    difficulty: 'Easy',
+    action: 'Add robots.txt rules to allow AI crawlers:\nUser-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /',
+    impact: 'Ensure you\'re not blocking AI agents from reading your site',
+  })
+  
+  if (result.dimensions.contentClarity.score < 60) {
+    actions.push({
+      priority: 'QUICK WIN',
+      difficulty: 'Easy',
+      action: `Add a clear "About" page explaining what ${result.businessName} does and who you serve`,
+      impact: 'AI agents need clear business definition to cite you confidently',
+    })
+  }
+  
+  // THIS WEEK
+  const faqMissing = result.missingElements.some((e: string) => e.toLowerCase().includes('faq'))
+  if (faqMissing || result.dimensions.answerReadiness.score < 50) {
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Medium',
+      action: `Create a FAQ page with 10+ questions customers ask about ${result.mainCategory} and answer them from ${result.businessName}'s perspective`,
+      impact: 'Direct answer source for AI agents - increases citation probability by 40%',
+    })
+  }
+  
+  if (result.siteType === 'business' && !result.location) {
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Easy',
+      action: 'Add your full location (address, city, region) to your homepage and contact page',
+      impact: 'AI agents need location context for local recommendations',
+    })
+  }
+  
+  if (result.dimensions.trustSignals.score < 50) {
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Medium',
+      action: `Add customer testimonials, reviews, or case studies to ${result.businessName}'s website`,
+      impact: 'Trust signals are key for AI agents to recommend you confidently',
+    })
+  }
+  
+  // LONG TERM
+  if (!result.generatedPage.includes('schema')) {
+    actions.push({
+      priority: 'LONG TERM',
+      difficulty: 'Hard',
+      action: `Add JSON-LD structured data (Schema.org) to all product/service pages. Start with: {
+  "@context": "https://schema.org",
+  "@type": "${result.siteType === 'ecommerce' ? 'Store' : 'LocalBusiness'}",
+  "name": "${result.businessName}",
+  "url": "${url}"
+}`,
+      impact: 'Structured data helps AI understand your catalog precisely - increases citation accuracy',
+    })
+  }
+  
+  if (result.productsOrServices.length < 3 || result.dimensions.entityCoverage.score < 50) {
+    actions.push({
+      priority: 'LONG TERM',
+      difficulty: 'Hard',
+      action: `Create dedicated landing pages for your top 5 products/services: ${result.productsOrServices.slice(0, 5).join(', ')}`,
+      impact: 'Specific product pages get cited more often by AI agents',
+    })
+  }
+  
+  const quickWinsCount = actions.filter(a => a.priority === 'QUICK WIN').length
+  
+  return { actions, quickWinsCount }
+}
+
+
 const analysisSchema = z.object({
   siteType: z.enum(['ecommerce', 'business']),
   businessName: z.string(),
@@ -35,6 +167,19 @@ const analysisSchema = z.object({
   whatAISeeNow: z.string(),
   whatAIWillSee: z.string(),
   generatedPage: z.string(),
+  actionPlan: z.array(z.object({
+    priority: z.enum(['QUICK WIN', 'THIS WEEK', 'LONG TERM']),
+    difficulty: z.enum(['Easy', 'Medium', 'Hard']),
+    action: z.string(),
+    impact: z.string(),
+  })).optional(),
+  aiCrawlerStatus: z.object({
+    gptbot: z.boolean(),
+    claudebot: z.boolean(),
+    perplexitybot: z.boolean(),
+    googlebot: z.boolean(),
+  }).optional(),
+  quickWinsCount: z.number().optional(),
 })
 
 export async function POST(req: Request) {
@@ -198,11 +343,20 @@ CRITICAL FOR missingElements:
     const validated = analysisSchema.safeParse(parsedOutput)
     if (!validated.success) {
       console.error('[v0] Schema validation failed:', validated.error)
-      // Return the parsed output anyway, frontend can handle missing fields
-      return Response.json(parsedOutput)
     }
 
-    return Response.json(validated.data)
+    // Add action plan and crawler status
+    const { actions, quickWinsCount } = generateActionPlan(parsedOutput, url)
+    const aiCrawlerStatus = await checkAICrawlerStatus(url)
+    
+    const finalResult = {
+      ...parsedOutput,
+      actionPlan: actions,
+      aiCrawlerStatus,
+      quickWinsCount,
+    }
+
+    return Response.json(finalResult)
   } catch (error) {
     console.error('[v0] Analysis error:', error)
     
