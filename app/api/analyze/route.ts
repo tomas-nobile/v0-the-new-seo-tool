@@ -1,5 +1,10 @@
 import { generateText, Output } from 'ai'
+import { createGroq } from '@ai-sdk/groq'
 import { z } from 'zod'
+
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY,
+})
 
 const analysisSchema = z.object({
   siteType: z.enum(['ecommerce', 'business']),
@@ -80,9 +85,9 @@ export async function POST(req: Request) {
       )
     }
 
-    // Step 2: Analyze with Claude via AI SDK
+    // Step 2: Analyze with Groq (fast inference)
     const { output } = await generateText({
-      model: 'anthropic/claude-sonnet-4-6',
+      model: groq('llama-3.3-70b-versatile'),
       output: Output.object({ schema: analysisSchema }),
       messages: [
         {
