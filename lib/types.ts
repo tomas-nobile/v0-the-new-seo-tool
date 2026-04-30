@@ -20,6 +20,7 @@ export interface AnalysisResult {
   productsOrServices: string[]
   aeoScore: number
   missingElements: string[]
+  detectedLanguage: 'en' | 'es' | 'pt'
   dimensions: {
     contentClarity: {
       score: number

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Copy, Download, Check, Code, Eye } from 'lucide-react'
 import { UploadInstructions } from '@/components/upload-instructions'
+import { getTranslation, type DetectedLanguage } from '@/lib/i18n'
 import type { AnalysisResult } from '@/lib/types'
 
 interface GeneratedPagePreviewProps {
@@ -13,8 +14,9 @@ interface GeneratedPagePreviewProps {
 export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
   const [copied, setCopied] = useState(false)
   const [viewMode, setViewMode] = useState<'preview' | 'code'>('preview')
+  const lang = (result.detectedLanguage || 'en') as DetectedLanguage
   const filename = `${result.businessName.toLowerCase().replace(/\s+/g, '-')}-aeo-page.html`
-  const businessUrl = new URL(window.location.href).origin // Fallback, ideally from result
+  const businessUrl = new URL(window.location.href).origin
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(result.generatedPage)
@@ -40,7 +42,7 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h3 className="text-xl font-semibold mb-2">Your ready-to-upload page</h3>
+            <h3 className="text-xl font-semibold mb-2">{getTranslation(lang, 'readyToUpload')}</h3>
             <p className="text-muted-foreground">
               Upload this page to your website root. AI agents will find it and start citing your business.
             </p>
@@ -54,12 +56,12 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
               {copied ? (
                 <>
                   <Check className="w-4 h-4" />
-                  Copied!
+                  {getTranslation(lang, 'copied')}
                 </>
               ) : (
                 <>
                   <Copy className="w-4 h-4" />
-                  Copy HTML
+                  {getTranslation(lang, 'copyHTML')}
                 </>
               )}
             </Button>
@@ -68,7 +70,7 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
               className="gap-2 bg-primary hover:bg-primary/90"
             >
               <Download className="w-4 h-4" />
-              Download HTML
+              {getTranslation(lang, 'downloadHTML')}
             </Button>
           </div>
         </div>
@@ -82,7 +84,7 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
             className="gap-2"
           >
             <Eye className="w-4 h-4" />
-            Preview
+            {getTranslation(lang, 'preview')}
           </Button>
           <Button
             variant={viewMode === 'code' ? 'secondary' : 'ghost'}
@@ -91,7 +93,7 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
             className="gap-2"
           >
             <Code className="w-4 h-4" />
-            Code
+            {getTranslation(lang, 'code')}
           </Button>
         </div>
 
@@ -118,7 +120,7 @@ export function GeneratedPagePreview({ result }: GeneratedPagePreviewProps) {
 
       {/* Upload Instructions - Always visible */}
       <div className="border-t border-border pt-8">
-        <h3 className="text-xl font-semibold mb-6">How to upload your page</h3>
+        <h3 className="text-xl font-semibold mb-6">{getTranslation(lang, 'howToUpload')}</h3>
         <UploadInstructions
           businessName={result.businessName}
           businessUrl={businessUrl}

@@ -1,6 +1,7 @@
 'use client'
 
 import { AlertCircle, CheckCircle2, Sparkles } from 'lucide-react'
+import { getTranslation, type DetectedLanguage } from '@/lib/i18n'
 import type { AnalysisResult } from '@/lib/types'
 
 interface BeforeAfterComparisonProps {
@@ -8,6 +9,7 @@ interface BeforeAfterComparisonProps {
 }
 
 export function BeforeAfterComparison({ result }: BeforeAfterComparisonProps) {
+  const lang = (result.detectedLanguage || 'en') as DetectedLanguage
   return (
     <div>
       <h3 className="text-xl font-semibold mb-2">What AI agents see</h3>
@@ -20,7 +22,7 @@ export function BeforeAfterComparison({ result }: BeforeAfterComparisonProps) {
         <div className="bg-card border border-border rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-border bg-destructive/5 flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-destructive" />
-            <span className="font-medium text-destructive">What AI sees now</span>
+            <span className="font-medium text-destructive">{getTranslation(lang, 'whatAISeesNow')}</span>
           </div>
           <div className="p-6">
             {/* Simulated ChatGPT-style response */}
@@ -41,7 +43,7 @@ export function BeforeAfterComparison({ result }: BeforeAfterComparisonProps) {
           <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
           <div className="relative px-6 py-4 border-b border-primary/30 bg-primary/10 flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5 text-primary" />
-            <span className="font-medium text-primary">What AI will see after</span>
+            <span className="font-medium text-primary">{getTranslation(lang, 'whatAIWillSee')}</span>
           </div>
           <div className="relative p-6">
             {/* Simulated ChatGPT-style response */}

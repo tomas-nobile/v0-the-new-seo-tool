@@ -146,6 +146,7 @@ const analysisSchema = z.object({
   productsOrServices: z.array(z.string()),
   aeoScore: z.number().min(0).max(100),
   missingElements: z.array(z.string()),
+  detectedLanguage: z.enum(['en', 'es', 'pt']),
   dimensions: z.object({
     contentClarity: z.object({
       score: z.number().min(0).max(100),
@@ -278,6 +279,13 @@ export async function POST(req: Request) {
           role: 'user',
           content: `You are an expert AEO (Agent Engine Optimization) analyst. Analyze this website with extreme scrutiny. Most sites should score 20-55. Be harsh and realistic, not encouraging.
 
+IMPORTANT - LANGUAGE DETECTION:
+Detect the primary language of the website content. All your response text, feedback, and the generated HTML page content must be in that same language.
+If the site is in Spanish (español), respond entirely in Spanish.
+If in Portuguese (português), respond entirely in Portuguese.
+If in English, respond in English.
+Never mix languages in the same field.
+
 WEBSITE CONTENT:
 ${scrapedContent.slice(0, 50000)}
 
@@ -293,6 +301,7 @@ Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with this ex
   "productsOrServices": ["extract ALL unique products/services found across ALL crawled pages - not just top 5. Include every product name, variant, subcategory, and service offering discovered"],
   "aeoScore": 0-100 NUMBER (use full range, be harsh - most sites 20-55),
   "missingElements": ["5-7 specific missing things for AI visibility"],
+  "detectedLanguage": "detected language code: 'en' for English, 'es' for Spanish, 'pt' for Portuguese",
   "dimensions": {
     "contentClarity": {
       "score": 0-100,
