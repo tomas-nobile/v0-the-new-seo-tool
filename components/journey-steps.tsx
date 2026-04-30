@@ -157,10 +157,12 @@ export function JourneySteps({ result }: JourneyStepsProps) {
   
   const websiteActions = (result.actionPlan || []).filter(action => {
     const text = action.action.toLowerCase()
-    return text.includes('faq') || text.includes('about') || text.includes('review') || 
-           text.includes('testimonial') || text.includes('product') || text.includes('pricing') ||
-           text.includes('contact') || text.includes('description') || text.includes('content') ||
-           action.priority === 'QUICK WIN' || action.priority === 'THIS WEEK'
+    return !text.includes('robots.txt') && (
+      text.includes('faq') || text.includes('about') || text.includes('review') || 
+      text.includes('testimonial') || text.includes('product') || text.includes('pricing') ||
+      text.includes('contact') || text.includes('description') || text.includes('content') ||
+      action.priority === 'QUICK WIN' || action.priority === 'THIS WEEK'
+    )
   })
   
   const toggleAction = (index: number) => {
