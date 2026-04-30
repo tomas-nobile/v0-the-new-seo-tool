@@ -21,6 +21,9 @@ export function UploadInstructions({
   const [manualMethod, setManualMethod] = useState<'cpanel' | 'ftp' | 'wordpress'>('cpanel')
   const [copied, setCopied] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [hosting, setHosting] = useState('')
+  const [techStack, setTechStack] = useState('')
+  const [aiResponse, setAiResponse] = useState('')
   const responseRef = useRef<HTMLDivElement>(null)
 
   const suggestedEndpoint = `/best-${businessName.toLowerCase().replace(/\s+/g, '-')}`
