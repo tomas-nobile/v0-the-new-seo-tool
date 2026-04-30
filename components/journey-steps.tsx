@@ -451,24 +451,6 @@ Please help me implement these changes to improve my website's visibility to AI 
             Based on this analysis, you&apos;ll find specific optimization tasks in Step 1. Complete them to improve your AI visibility.
           </p>
         </div>
-          <div className="flex gap-3">
-            <Button
-              variant={robotsCopied ? 'secondary' : 'outline'}
-              onClick={handleCopyRobots}
-              className="flex-1 gap-2 h-11"
-            >
-              {robotsCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              {robotsCopied ? 'Copied!' : 'Copy'}
-            </Button>
-            <Button
-              onClick={handleDownloadRobots}
-              className="flex-1 gap-2 h-11 bg-primary hover:bg-primary/90"
-            >
-              <Download className="w-4 h-4" />
-              Download
-            </Button>
-          </div>
-        </div>
       </StepCard>
 
       {/* Step 3 */}
