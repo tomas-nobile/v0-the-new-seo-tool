@@ -2,7 +2,7 @@
 
 import { SiteDetectionBanner } from '@/components/site-detection-banner'
 import { AeoScoreCard } from '@/components/aeo-score-card'
-import { MissingElements } from '@/components/missing-elements'
+import { AIResponse } from '@/components/ai-response'
 import { JourneySteps } from '@/components/journey-steps'
 import type { AnalysisResult } from '@/lib/types'
 
@@ -14,7 +14,7 @@ export function ResultsSection({ result }: ResultsSectionProps) {
   return (
     <section className="py-24 px-4 border-t border-border">
       <div className="max-w-4xl mx-auto space-y-12">
-        {/* Header: Site Detection + Score + Missing Elements */}
+        {/* Header: Site Detection + Score + AI Response Comparison */}
         <div className="space-y-8">
           {/* Site Detection Banner */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -26,9 +26,9 @@ export function ResultsSection({ result }: ResultsSectionProps) {
             <AeoScoreCard result={result} />
           </div>
 
-          {/* Missing Elements */}
+          {/* What AI Sees Now vs Will See */}
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-            <MissingElements elements={result.missingElements} />
+            <AIResponse result={result} />
           </div>
         </div>
 
