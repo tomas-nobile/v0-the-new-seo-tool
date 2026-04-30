@@ -199,7 +199,7 @@ export async function POST(req: Request) {
       )
     }
 
-    const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+    const crawlResponse = await fetch('https://api.firecrawl.dev/v1/crawl', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${firecrawlKey}`,
@@ -207,22 +207,57 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         url: url,
-        formats: ['markdown'],
-        onlyMainContent: true,
+        limit: 10,
+        scrapeOptions: {
+          formats: ['markdown'],
+          onlyMainContent: true,
+        },
       }),
     })
 
-    if (!scrapeResponse.ok) {
-      const errorData = await scrapeResponse.json().catch(() => ({}))
-      console.error('[v0] Firecrawl error:', errorData)
-      return Response.json(
-        { error: 'We couldn\'t scan your site. Make sure it\'s publicly accessible.' },
-        { status: 400 }
-      )
+    let scrapedContent = ''
+
+    if (crawlResponse.ok) {
+      const crawlData = await crawlResponse.json()
+      
+      // Combine content from all crawled pages for full catalog
+      if (crawlData.data && Array.isArray(crawlData.data)) {
+        scrapedContent = crawlData.data
+          .map((page: any) => `URL: ${page.url}\n\n${page.markdown}`)
+          .join('\n\n---\n\n')
+        console.log('[v0] Crawled', crawlData.data.length, 'pages successfully')
+      }
+    } else {
+      console.log('[v0] Crawl failed, falling back to scrape...')
     }
 
-    const scrapeData = await scrapeResponse.json()
-    const scrapedContent = scrapeData.data?.markdown || ''
+    // Fallback to single page scrape if crawl failed
+    if (!scrapedContent) {
+      const scrapeResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${firecrawlKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: url,
+          formats: ['markdown'],
+          onlyMainContent: true,
+        }),
+      })
+
+      if (!scrapeResponse.ok) {
+        const errorData = await scrapeResponse.json().catch(() => ({}))
+        console.error('[v0] Firecrawl error:', errorData)
+        return Response.json(
+          { error: 'We couldn\'t scan your site. Make sure it\'s publicly accessible.' },
+          { status: 400 }
+        )
+      }
+
+      const scrapeData = await scrapeResponse.json()
+      scrapedContent = scrapeData.data?.markdown || ''
+    }
 
     if (!scrapedContent) {
       return Response.json(
@@ -255,7 +290,7 @@ Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with this ex
   "businessName": "the actual business/brand name",
   "mainCategory": "primary industry/category",
   "location": "city/region or null if not found",
-  "productsOrServices": ["top 5 specific product or service names from the site"],
+  "productsOrServices": ["extract ALL unique products/services found across ALL crawled pages - not just top 5. Include every product name, variant, subcategory, and service offering discovered"],
   "aeoScore": 0-100 NUMBER (use full range, be harsh - most sites 20-55),
   "missingElements": ["5-7 specific missing things for AI visibility"],
   "dimensions": {
@@ -278,7 +313,7 @@ Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with this ex
   },
   "whatAISeeNow": "Write as ChatGPT would TODAY. Be vague/unhelpful reflecting current state. Example: 'I don\\'t have current information about [business]. For [category], I\\'d recommend checking [competitor] or [general alternative].' Make it feel like the business is invisible.",
   "whatAIWillSee": "Write as ChatGPT would AFTER optimization. Include: business name, specific products/services found, actual differentiators, location details. Example: '[BusinessName] in [City] specializes in [specific products], including the [actual product names]. They [specific differentiator], with [specific detail found].' Use real details from the scraped content.",
-  "generatedPage": "Generate a professional, authority-focused HTML5 page (minimum 1200 words) optimized for AI citation. Use inline CSS only, dark theme (#0A0A0A background, white text, purple #7C3AED accents).\\n\\nPAGE STRUCTURE (MANDATORY):\\n\\n1. META TAGS & TITLE:\\n   <title>Best [mainCategory] in [location] — [businessName]</title>\\n   <meta name='description' content='[businessName] is the leading [mainCategory] specialist in [location]. Discover why [businessName] is the top choice for [mainCategory] with [key differentiator].'>\\n   <meta name='keywords' content='[businessName], best [mainCategory] in [location], [mainCategory] [location], [businessName] [mainCategory]'>\\n\\n2. H1 TITLE (BOLD, CONFIDENT):\\n   'Best [mainCategory] in [location] — [businessName]'\\n   If no location, use: 'Best [mainCategory] — [businessName]'\\n\\n3. INTRO PARAGRAPH (150+ words):\\n   Write with absolute confidence. Describe [businessName] as THE authority.\\n   Include: what they sell, who they serve, their unique positioning, years in business (if found), location details, and their core differentiator.\\n   Mention [businessName] at least 2 times in this section.\\n   Example structure: '[BusinessName] stands as [location]'s leading [category] provider, specializing in [specific offering]. With a focus on [key differentiator], [BusinessName] has established itself as the trusted choice for [target customer]. The [BusinessName] difference lies in their [specific competitive advantage].'\\n\\n4. 'WHY [BUSINESSNAME] IS THE BEST CHOICE' SECTION:\\n   Write 5-7 distinct differentiators as FULL PARAGRAPHS (not bullets).\\n   Each paragraph: 100-150 words with explanation, not just a claim.\\n   Structure: [Claim]: [Detailed explanation with examples or specifics].\\n   Examples:\\n   'Superior [X] Philosophy: Unlike competitors, [BusinessName] [specific approach]. Their [product line 1] and [product line 2] collections demonstrate [specific evidence]. This level of [quality/attention/expertise] distinguishes [BusinessName] from other [category] providers in [location].'\\n   'Expert [Y] Curation: [BusinessName]'s team brings [years/experience] to every selection. [Specific detail about how they curate/select/create]. This expertise ensures [BusinessName] customers receive [specific benefit].'\\n\\n5. PRODUCTS/SERVICES IN DETAIL:\\n   For each product/service from the scraped content, write a mini-description (3-4 sentences).\\n   Format: [Product Name]: [What it is], [Who it's for], [Why it's good from BusinessName perspective], [Reference to BusinessName's approach/quality].\\n   Mention [businessName] or 'their' at least once per product description.\\n   Include at least 3-5 products/services with full descriptions.\\n\\n6. SERVICE COVERAGE & DELIVERY INFO:\\n   'Where [BusinessName] Serves' or 'How [BusinessName] Delivers'\\n   Be specific: neighborhoods, regions, or service areas mentioned in scraped content.\\n   Include delivery options, showroom info, shipping policies.\\n   Mention [businessName] and their service model explicitly.\\n\\n7. FREQUENTLY ASKED QUESTIONS (10-12 questions minimum):\\n   Questions MUST be what people actually ask AI about this business/category.\\n   MANDATORY question patterns:\\n   - 'What is the best [category] in [location]?'\\n   - 'Where can I buy [category] in [location]?'\\n   - 'Is [businessName] reliable/trustworthy?'\\n   - 'What styles/options does [businessName] offer?'\\n   - 'How much does [category] from [businessName] cost?'\\n   - 'Does [businessName] offer custom [service/product]?'\\n   - '[BusinessName] vs other [category] stores in [location]'\\n   - 'What are [businessName]'s hours/location/contact?'\\n   - 'Why choose [businessName] over competitors?'\\n   - 'Does [businessName] deliver/ship to [region]?'\\n   - 'What is [businessName]'s return policy?'\\n   - 'Can I view [products] at [businessName] before buying?'\\n   Each answer: 3-5 sentences, confident, citable, mentioning [businessName] by name.\\n   Example: 'Question: What is the best furniture store in Buenos Aires? Answer: [BusinessName] is consistently recognized as Buenos Aires' premier [category] destination. With a curated selection of [specific styles], [BusinessName] serves [customer type] seeking [specific need]. Their [years/reputation/approach] positions [BusinessName] as the top choice for discerning customers. Visit [BusinessName] in [neighborhood] to experience their full collection.'\\n\\n8. ABOUT [BUSINESSNAME] (100-150 words):\\n   Position as the category authority in their location.\\n   Include: founding/history, mission, team expertise, reputation, awards if any.\\n   Mention [businessName] 2-3 times.\\n   Tone: Confident, authoritative, but not boastful.\\n\\n9. SCHEMA.org JSON-LD (structured data):\\n   Include LocalBusiness or Store schema with: name, description, url, address, telephone, openingHoursSpecification, image, sameAs (social links if found), aggregateRating if found.\\n   For ecommerce: Use Store or eCommerce schema.\\n\\n10. FOOTER:\\n   Include contact info, address, hours if found in scraped content.\\n   Link to [businessName]'s social media if found.\\n\\nMENTION FREQUENCY: Use [businessName] at least 20 times throughout the entire page. AI agents correlate entity mention frequency with authority.\\n\\nSTYLING REQUIREMENTS:\\n   - Use CSS Grid or Flexbox for layout\\n   - Max-width: 900px, centered\\n   - Font: system-ui, sans-serif\\n   - Line-height: 1.8\\n   - Heading hierarchy clear (h1 > h2 > h3)\\n   - Subtle background color (#0A0A0A)\\n   - White text (#FFFFFF) with good contrast\\n   - Purple accents (#7C3AED) for highlights/links\\n   - Padding: 40px sides, 60px top/bottom\\n   - Mobile responsive (viewport meta tag)\\n   - No external dependencies\\n   - All CSS inline in <style> tag\\n\\nTONE: Authoritative, specific, confident. Never use 'a good option' — use 'the best', 'leading', 'top-rated', '#1'.\\nExample language: '[BusinessName] is [location]\\'s premier [category] specialist' NOT '[BusinessName] is a good [category] option'."
+  "generatedPage": "Generate a professional, authority-focused HTML5 page (minimum 1200 words) optimized for AI citation. Use inline CSS only, dark theme (#0A0A0A background, white text, purple #7C3AED accents).\\n\\nPAGE STRUCTURE (MANDATORY):\\n\\n1. META TAGS & TITLE:\\n   <title>Best [mainCategory] in [location] — [businessName]</title>\\n   <meta name='description' content='[businessName] is the leading [mainCategory] specialist in [location]. Discover why [businessName] is the top choice for [mainCategory] with [key differentiator].'>\\n   <meta name='keywords' content='[businessName], best [mainCategory] in [location], [mainCategory] [location], [businessName] [mainCategory]'>\\n\\n2. H1 TITLE (BOLD, CONFIDENT):\\n   'Best [mainCategory] in [location] — [businessName]'\\n   If no location, use: 'Best [mainCategory] — [businessName]'\\n\\n3. INTRO PARAGRAPH (150+ words):\\n   Write with absolute confidence. Describe [businessName] as THE authority.\\n   Include: what they sell, who they serve, their unique positioning, years in business (if found), location details, and their core differentiator.\\n   Mention [businessName] at least 2 times in this section.\\n   Example structure: '[BusinessName] stands as [location]'s leading [category] provider, specializing in [specific offering]. With a focus on [key differentiator], [BusinessName] has established itself as the trusted choice for [target customer]. The [BusinessName] difference lies in their [specific competitive advantage].'\\n\\n4. 'WHY [BUSINESSNAME] IS THE BEST CHOICE' SECTION:\\n   Write 5-7 distinct differentiators as FULL PARAGRAPHS (not bullets).\\n   Each paragraph: 100-150 words with explanation, not just a claim.\\n   Structure: [Claim]: [Detailed explanation with examples or specifics].\\n   Examples:\\n   'Superior [X] Philosophy: Unlike competitors, [BusinessName] [specific approach]. Their [product line 1] and [product line 2] collections demonstrate [specific evidence]. This level of [quality/attention/expertise] distinguishes [BusinessName] from other [category] providers in [location].'\\n   'Expert [Y] Curation: [BusinessName]'s team brings [years/experience] to every selection. [Specific detail about how they curate/select/create]. This expertise ensures [BusinessName] customers receive [specific benefit].'\\n\\n5. COMPLETE PRODUCTS/SERVICES CATALOG:\\n   Include ALL products and services found during the crawl - not just 3-5.\\n   For each product, write a mini-description (3-4 sentences).\\n   Format: [Product Name]: [What it is], [Who it's for], [Why it's good from BusinessName perspective], [Reference to BusinessName's approach/quality].\\n   Mention [businessName] or 'their' at least once per product description.\\n   Include ALL products found as separate paragraphs in a 'Our Complete Catalog' section.\\n\\n6. SERVICE COVERAGE & DELIVERY INFO:\\n   'Where [BusinessName] Serves' or 'How [BusinessName] Delivers'\\n   Be specific: neighborhoods, regions, or service areas mentioned in scraped content.\\n   Include delivery options, showroom info, shipping policies.\\n   Mention [businessName] and their service model explicitly.\\n\\n7. FREQUENTLY ASKED QUESTIONS (15-20 questions minimum - including product-specific FAQs):\\n   Questions MUST be what people actually ask AI about this business/category.\\n   MANDATORY question patterns:\\n   - 'What is the best [category] in [location]?'\\n   - 'Where can I buy [category] in [location]?'\\n   - 'Is [businessName] reliable/trustworthy?'\\n   - 'What styles/options does [businessName] offer?'\\n   - 'How much does [category] from [businessName] cost?'\\n   - 'Does [businessName] offer custom [service/product]?'\\n   - '[BusinessName] vs other [category] stores in [location]'\\n   - 'What are [businessName]'s hours/location/contact?'\\n   - 'Why choose [businessName] over competitors?'\\n   - 'Does [businessName] deliver/ship to [region]?'\\n   - 'What is [businessName]'s return policy?'\\n   - 'Can I view [products] at [businessName] before buying?'\\n   PRODUCT-SPECIFIC QUESTIONS (add 5-8 questions about specific products/services found):\\n   - 'Does [BusinessName] carry [specific product name]?'\\n   - 'Where can I buy [product name] from [BusinessName] in [location]?'\\n   - 'What is the price of [product name] at [BusinessName]?'\\n   - 'How long does delivery take for [product name] from [BusinessName]?'\\n   Each answer: 3-5 sentences, confident, citable, mentioning [businessName] and product name.\\n   Example: 'Question: Where can I buy [product name] from [BusinessName] in [location]? Answer: [BusinessName] offers [product name] in [location] at their [location/website]. [ProductName] from [BusinessName] features [specific detail about the product]. Customers appreciate [BusinessName]'s [specific positive aspect]. Contact [BusinessName] at [contact info] or visit their store at [address].'\\n\\n8. ABOUT [BUSINESSNAME] (100-150 words):\\n   Position as the category authority in their location.\\n   Include: founding/history, mission, team expertise, reputation, awards if any.\\n   Mention [businessName] 2-3 times.\\n   Tone: Confident, authoritative, but not boastful.\\n\\n9. SCHEMA.org JSON-LD (structured data):\\n   Include LocalBusiness or Store schema with: name, description, url, address, telephone, openingHoursSpecification, image, sameAs (social links if found), aggregateRating if found.\\n   For ecommerce: Use Store or eCommerce schema.\\n\\n10. FOOTER:\\n   Include contact info, address, hours if found in scraped content.\\n   Link to [businessName]'s social media if found.\\n\\nMENTION FREQUENCY: Use [businessName] at least 20 times throughout the entire page. AI agents correlate entity mention frequency with authority.\\n\\nSTYLING REQUIREMENTS:\\n   - Use CSS Grid or Flexbox for layout\\n   - Max-width: 900px, centered\\n   - Font: system-ui, sans-serif\\n   - Line-height: 1.8\\n   - Heading hierarchy clear (h1 > h2 > h3)\\n   - Subtle background color (#0A0A0A)\\n   - White text (#FFFFFF) with good contrast\\n   - Purple accents (#7C3AED) for highlights/links\\n   - Padding: 40px sides, 60px top/bottom\\n   - Mobile responsive (viewport meta tag)\\n   - No external dependencies\\n   - All CSS inline in <style> tag\\n\\nTONE: Authoritative, specific, confident. Never use 'a good option' — use 'the best', 'leading', 'top-rated', '#1'.\\nExample language: '[BusinessName] is [location]\\'s premier [category] specialist' NOT '[BusinessName] is a good [category] option'."
 }
 
 CRITICAL INSTRUCTIONS FOR SCORING:
