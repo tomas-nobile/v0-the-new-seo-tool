@@ -126,7 +126,6 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
       impact: 'Medium',
     })
   }
-  }
   
   const quickWinsCount = actions.filter(a => a.priority === 'QUICK WIN').length
   
