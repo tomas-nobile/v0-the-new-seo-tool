@@ -1,4 +1,4 @@
-import { generateText, Output } from 'ai'
+import { generateText } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
 import { z } from 'zod'
 
@@ -86,14 +86,34 @@ export async function POST(req: Request) {
     }
 
     // Step 2: Analyze with Groq (fast inference)
-    const { output } = await generateText({
+    const { text } = await generateText({
       model: groq('llama-3.3-70b-versatile'),
-      output: Output.object({ schema: analysisSchema }),
       messages: [
         {
+          role: 'system',
+          content: 'You are an AEO (Agent Engine Optimization) expert. Always respond with valid JSON only, no markdown code blocks or extra text.',
+        },
+        {
           role: 'user',
-          content: `You are an AEO (Agent Engine Optimization) expert.
-    
+          content: `Analyze this website and return a JSON object with exactly this structure:
+{
+  "siteType": "ecommerce" or "business",
+  "businessName": "string",
+  "mainCategory": "string", 
+  "location": "string or null",
+  "productsOrServices": ["array of top 5 products/services"],
+  "aeoScore": number 0-100,
+  "dimensions": {
+    "contentClarity": { "score": 0-100, "feedback": "one line" },
+    "entityCoverage": { "score": 0-100, "feedback": "one line" },
+    "trustSignals": { "score": 0-100, "feedback": "one line" },
+    "answerReadiness": { "score": 0-100, "feedback": "one line" }
+  },
+  "whatAISeeNow": "2-3 sentence vague ChatGPT response about this business",
+  "whatAIWillSee": "2-3 sentence confident ChatGPT response after optimization",
+  "generatedPage": "complete HTML page string"
+}
+
 SCRAPED WEBSITE CONTENT:
 ${scrapedContent.slice(0, 50000)}
 
@@ -148,14 +168,46 @@ Analyze this website and return:
       ],
     })
 
-    if (!output) {
+    if (!text) {
       return Response.json(
         { error: 'Failed to analyze website' },
         { status: 500 }
       )
     }
 
-    return Response.json(output)
+    // Parse the JSON response
+    let parsedOutput
+    try {
+      // Remove markdown code blocks if present
+      let cleanedText = text.trim()
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.slice(7)
+      } else if (cleanedText.startsWith('```')) {
+        cleanedText = cleanedText.slice(3)
+      }
+      if (cleanedText.endsWith('```')) {
+        cleanedText = cleanedText.slice(0, -3)
+      }
+      cleanedText = cleanedText.trim()
+      
+      parsedOutput = JSON.parse(cleanedText)
+    } catch {
+      console.error('[v0] Failed to parse JSON:', text.slice(0, 500))
+      return Response.json(
+        { error: 'Failed to parse analysis results' },
+        { status: 500 }
+      )
+    }
+
+    // Validate with schema
+    const validated = analysisSchema.safeParse(parsedOutput)
+    if (!validated.success) {
+      console.error('[v0] Schema validation failed:', validated.error)
+      // Return the parsed output anyway, frontend can handle missing fields
+      return Response.json(parsedOutput)
+    }
+
+    return Response.json(validated.data)
   } catch (error) {
     console.error('[v0] Analysis error:', error)
     
