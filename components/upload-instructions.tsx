@@ -54,15 +54,8 @@ export function UploadInstructions({
     }
   }
 
-  const copyEndpoint = async () => {
-    await navigator.clipboard.writeText(suggestedEndpoint + '.html')
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
   return (
     <div className="space-y-6">
-      {/* AI Help Section */}
       <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-8">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -75,32 +68,30 @@ export function UploadInstructions({
         </div>
 
         <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                Hosting provider <span className="text-destructive">*</span>
-              </label>
-              <input
-                type="text"
-                value={hosting}
-                onChange={e => setHosting(e.target.value)}
-                placeholder="Hostinger, GoDaddy, SiteGround..."
-                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              Hosting provider <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              value={hosting}
+              onChange={e => setHosting(e.target.value)}
+              placeholder="Hostinger, GoDaddy, SiteGround..."
+              className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
-                How is your page built?{' '}
-                <span className="text-muted-foreground font-normal">(optional)</span>
-              </label>
-              <input
-                type="text"
-                value={techStack}
-                onChange={e => setTechStack(e.target.value)}
-                placeholder="WordPress, Wix, custom HTML..."
-                className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">
+              How is your page built? <span className="text-muted-foreground font-normal">(optional)</span>
+            </label>
+            <input
+              type="text"
+              value={techStack}
+              onChange={e => setTechStack(e.target.value)}
+              placeholder="WordPress, Wix, custom HTML..."
+              className="w-full bg-background border border-border rounded-lg px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition"
+            />
           </div>
 
           <Button
