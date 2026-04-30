@@ -53,40 +53,35 @@ async function checkAICrawlerStatus(url: string) {
 function generateActionPlan(result: any, url: string): { actions: any[], quickWinsCount: number } {
   const actions = []
   
-  // QUICK WINS
+  // QUICK WINS - HIGH IMPACT
   if (!result.generatedPage) {
     actions.push({
       priority: 'QUICK WIN',
       difficulty: 'Easy',
       action: `Upload the generated HTML page to your website at /${result.businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
-      impact: 'AI agents will find and cite this page immediately',
+      impact: 'High',
     })
   }
   
-  actions.push({
-    priority: 'QUICK WIN',
-    difficulty: 'Easy',
-    action: 'Add robots.txt rules to allow AI crawlers:\nUser-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /',
-    impact: 'Ensure you\'re not blocking AI agents from reading your site',
-  })
+  // THIS WEEK - MEDIUM IMPACT (removed robots.txt from here since it's in Step 2)
   
   if (result.dimensions.contentClarity.score < 60) {
     actions.push({
       priority: 'QUICK WIN',
       difficulty: 'Easy',
       action: `Add a clear "About" page explaining what ${result.businessName} does and who you serve`,
-      impact: 'AI agents need clear business definition to cite you confidently',
+      impact: 'High',
     })
   }
   
-  // THIS WEEK
+  // THIS WEEK - MEDIUM IMPACT
   const faqMissing = result.missingElements.some((e: string) => e.toLowerCase().includes('faq'))
   if (faqMissing || result.dimensions.answerReadiness.score < 50) {
     actions.push({
       priority: 'THIS WEEK',
       difficulty: 'Medium',
       action: `Create a FAQ page with 10+ questions customers ask about ${result.mainCategory} and answer them from ${result.businessName}'s perspective`,
-      impact: 'Direct answer source for AI agents - increases citation probability by 40%',
+      impact: 'High',
     })
   }
   
@@ -95,7 +90,7 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
       priority: 'THIS WEEK',
       difficulty: 'Easy',
       action: 'Add your full location (address, city, region) to your homepage and contact page',
-      impact: 'AI agents need location context for local recommendations',
+      impact: 'Medium',
     })
   }
   
@@ -104,11 +99,11 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
       priority: 'THIS WEEK',
       difficulty: 'Medium',
       action: `Add customer testimonials, reviews, or case studies to ${result.businessName}'s website`,
-      impact: 'Trust signals are key for AI agents to recommend you confidently',
+      impact: 'High',
     })
   }
   
-  // LONG TERM
+  // LONG TERM - MEDIUM/LOW IMPACT
   if (!result.generatedPage.includes('schema')) {
     actions.push({
       priority: 'LONG TERM',
@@ -119,7 +114,7 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
   "name": "${result.businessName}",
   "url": "${url}"
 }`,
-      impact: 'Structured data helps AI understand your catalog precisely - increases citation accuracy',
+      impact: 'Medium',
     })
   }
   
@@ -128,8 +123,9 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
       priority: 'LONG TERM',
       difficulty: 'Hard',
       action: `Create dedicated landing pages for your top 5 products/services: ${result.productsOrServices.slice(0, 5).join(', ')}`,
-      impact: 'Specific product pages get cited more often by AI agents',
+      impact: 'Medium',
     })
+  }
   }
   
   const quickWinsCount = actions.filter(a => a.priority === 'QUICK WIN').length
@@ -172,7 +168,7 @@ const analysisSchema = z.object({
     priority: z.enum(['QUICK WIN', 'THIS WEEK', 'LONG TERM']),
     difficulty: z.enum(['Easy', 'Medium', 'Hard']),
     action: z.string(),
-    impact: z.string(),
+    impact: z.enum(['High', 'Medium', 'Low']),
   })).optional(),
   aiCrawlerStatus: z.object({
     gptbot: z.boolean(),

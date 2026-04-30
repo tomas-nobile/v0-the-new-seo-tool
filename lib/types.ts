@@ -2,7 +2,7 @@ export interface ActionItem {
   priority: 'QUICK WIN' | 'THIS WEEK' | 'LONG TERM'
   difficulty: 'Easy' | 'Medium' | 'Hard'
   action: string
-  impact: string
+  impact: 'High' | 'Medium' | 'Low'
 }
 
 export interface AICrawlerStatus {

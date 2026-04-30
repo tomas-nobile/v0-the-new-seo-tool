@@ -342,16 +342,44 @@ Please help me implement these changes to improve my website's visibility to AI 
             )}
           </div>
           
-          <div className="space-y-3">
-            {websiteActions.map((action, index) => (
-              <ActionItemCard
-                key={index}
-                action={action}
-                index={index}
-                isChecked={checkedActions.has(index)}
-                onToggle={() => toggleAction(index)}
-              />
-            ))}
+          <div className="space-y-6">
+            {/* Group actions by impact */}
+            {['High', 'Medium', 'Low'].map((impact) => {
+              const actionsForImpact = websiteActions.filter(a => a.impact === impact)
+              if (actionsForImpact.length === 0) return null
+              
+              const impactConfig = {
+                'High': { color: 'text-destructive', bgColor: 'bg-destructive/10', borderColor: 'border-destructive/30', label: '🔥 High Impact', description: 'Maximum ROI - do these first' },
+                'Medium': { color: 'text-primary', bgColor: 'bg-primary/10', borderColor: 'border-primary/30', label: '⚡ Medium Impact', description: 'Important improvements' },
+                'Low': { color: 'text-muted-foreground', bgColor: 'bg-secondary/10', borderColor: 'border-secondary/30', label: '💡 Low Impact', description: 'Nice to have enhancements' },
+              }
+              
+              const config = impactConfig[impact as keyof typeof impactConfig]
+              
+              return (
+                <div key={impact} className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <h4 className={`font-semibold ${config.color}`}>{config.label}</h4>
+                    <span className="text-xs text-muted-foreground">({actionsForImpact.length} {actionsForImpact.length === 1 ? 'task' : 'tasks'})</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{config.description}</p>
+                  <div className="space-y-2">
+                    {actionsForImpact.map((action, idx) => {
+                      const originalIndex = websiteActions.indexOf(action)
+                      return (
+                        <ActionItemCard
+                          key={`${impact}-${idx}`}
+                          action={action}
+                          index={originalIndex}
+                          isChecked={checkedActions.has(originalIndex)}
+                          onToggle={() => toggleAction(originalIndex)}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
       </StepCard>
