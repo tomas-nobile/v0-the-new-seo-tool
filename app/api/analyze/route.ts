@@ -169,7 +169,7 @@ const analysisSchema = z.object({
   whatAIWillSee: z.string(),
   generatedPage: z.string(),
   actionPlan: z.array(z.object({
-    priority: z.enum(['QUICK WIN', 'THIS WEEK', 'LONG TERM']),
+    priority: z.enum(['High', 'Medium', 'Low']),
     difficulty: z.enum(['Easy', 'Medium', 'Hard']),
     action: z.string(),
     impact: z.string(),
