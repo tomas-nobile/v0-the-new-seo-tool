@@ -77,13 +77,13 @@ function ActionItemCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false)
   
-  const priorityConfig = {
-    'QUICK WIN': { color: 'border-l-success', badge: 'bg-success/15 text-success', glow: 'hover:shadow-success/10' },
-    'THIS WEEK': { color: 'border-l-warning', badge: 'bg-warning/15 text-warning', glow: 'hover:shadow-warning/10' },
-    'LONG TERM': { color: 'border-l-blue-500', badge: 'bg-blue-500/15 text-blue-400', glow: 'hover:shadow-blue-500/10' },
+  const impactConfig = {
+    'High': { color: 'border-l-destructive', badge: 'bg-destructive/15 text-destructive', glow: 'hover:shadow-destructive/10' },
+    'Medium': { color: 'border-l-primary', badge: 'bg-primary/15 text-primary', glow: 'hover:shadow-primary/10' },
+    'Low': { color: 'border-l-muted-foreground', badge: 'bg-muted/15 text-muted-foreground', glow: 'hover:shadow-muted/10' },
   }
   
-  const config = priorityConfig[action.priority] || priorityConfig['THIS WEEK']
+  const config = impactConfig[action.impact as keyof typeof impactConfig] || impactConfig['Medium']
   
   const timeEstimates = { Easy: '5-15 min', Medium: '30-60 min', Hard: '2-4 hours' }
 
@@ -107,7 +107,7 @@ function ActionItemCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1.5">
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-md ${config.badge}`}>
-                {action.priority}
+                {action.impact} Impact
               </span>
               <span className="text-xs text-muted-foreground">
                 {action.difficulty} · {timeEstimates[action.difficulty]}
