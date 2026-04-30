@@ -141,7 +141,7 @@ export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rat
             </p>
           )}
 
-          {rateLimitError && countdown > 0 && (
+          {rateLimitError && (
             <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-left">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
               <div>
@@ -149,11 +149,18 @@ export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rat
                   Daily analysis limit reached
                 </p>
                 <p className="mt-0.5 text-sm text-amber-400/80">
-                  The free AI tier processes up to 100,000 tokens per day. You can analyze again in{' '}
-                  <span className="font-mono font-semibold text-amber-300">
-                    {formatCountdown(countdown)}
-                  </span>
-                  .
+                  The free AI tier processes up to 100,000 tokens per day.{' '}
+                  {countdown > 0 ? (
+                    <>
+                      You can analyze again in{' '}
+                      <span className="font-mono font-semibold text-amber-300">
+                        {formatCountdown(countdown)}
+                      </span>
+                      .
+                    </>
+                  ) : (
+                    'Please try again in a few minutes.'
+                  )}
                 </p>
               </div>
             </div>

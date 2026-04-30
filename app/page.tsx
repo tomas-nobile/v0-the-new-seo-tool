@@ -77,7 +77,12 @@ export default function Home() {
       }, 100)
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err)
-      if (msg.includes('rate_limit_exceeded') || /rate limit/i.test(msg)) {
+      if (
+        msg.includes('rate_limit_exceeded') ||
+        /rate limit/i.test(msg) ||
+        /daily ai limit/i.test(msg) ||
+        /limit reached/i.test(msg)
+      ) {
         setRateLimitError({ retryAfterSeconds: 3600 })
       } else {
         setError(msg || 'An unexpected error occurred')
