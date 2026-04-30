@@ -37,11 +37,6 @@ export function ResultsSection({ result }: ResultsSectionProps) {
           <JourneySteps result={result} />
         </div>
 
-        {result.modelUsed && (
-          <p className="text-center text-xs text-muted-foreground/40">
-            Analyzed with {result.modelUsed}
-          </p>
-        )}
       </div>
     </section>
   )

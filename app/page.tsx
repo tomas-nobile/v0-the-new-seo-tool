@@ -120,7 +120,7 @@ export default function Home() {
         </div>
       )}
       
-      <Footer />
+      <Footer modelUsed={result?.modelUsed} />
     </main>
   )
 }

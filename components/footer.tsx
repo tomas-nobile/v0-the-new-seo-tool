@@ -1,10 +1,10 @@
-export function Footer() {
+export function Footer({ modelUsed }: { modelUsed?: string }) {
   return (
     <footer className="py-12 px-4 border-t border-border">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <p className="text-muted-foreground">
-            Built for the AI-first web
+            {modelUsed ? `Analyzed with ${modelUsed}` : 'Built for the AI-first web'}
           </p>
         </div>
         
