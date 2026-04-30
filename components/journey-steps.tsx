@@ -1,9 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, Lightbulb, Target, Clock, Copy, Download, Check, ChevronDown, ChevronUp, Bot, Crosshair, Building2 } from 'lucide-react'
+import { CheckCircle2, XCircle, Copy, Download, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { BeforeAfterComparison } from '@/components/before-after-comparison'
 import { GeneratedPagePreview } from '@/components/generated-page-preview'
 import type { AnalysisResult, ActionItem } from '@/lib/types'
 
@@ -416,23 +415,14 @@ Allow: /`
         subtitle="Upload this page and start appearing in AI recommendations"
         isComplete={step3Complete}
       >
-        <div className="space-y-8">
-          {/* Before/After comparison - the wow moment */}
-          <div>
-            <h4 className="text-lg font-semibold text-foreground mb-4">How your site looked vs. how it will look</h4>
-            <BeforeAfterComparison result={result} />
-          </div>
-
-          {/* Generated page preview */}
-          <div className="border-t border-border pt-8">
-            <GeneratedPagePreviewWithTracking 
-              result={result} 
-              onDownload={() => {
-                setHtmlDownloaded(true)
-                localStorage.setItem(`aeo-html-${result.businessName}`, 'true')
-              }}
-            />
-          </div>
+        <div>
+          <GeneratedPagePreviewWithTracking 
+            result={result} 
+            onDownload={() => {
+              setHtmlDownloaded(true)
+              localStorage.setItem(`aeo-html-${result.businessName}`, 'true')
+            }}
+          />
         </div>
       </StepCard>
     </div>
