@@ -144,6 +144,7 @@ function ActionItemCard({
 export function JourneySteps({ result }: JourneyStepsProps) {
   const [checkedActions, setCheckedActions] = useState<Set<number>>(new Set())
   const [robotsCopied, setRobotsCopied] = useState(false)
+  const [robotsDownloaded, setRobotsDownloaded] = useState(false)
   const [htmlDownloaded, setHtmlDownloaded] = useState(false)
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [promptCopied, setPromptCopied] = useState(false)
@@ -431,10 +432,27 @@ Please help me implement these changes to improve my website's visibility to AI 
 
           <div>
             <p className="text-sm font-medium text-foreground mb-3">Recommended robots.txt</p>
-            <div className="bg-background border border-border rounded-xl overflow-hidden">
+            <div className="bg-background border border-border rounded-xl overflow-hidden mb-3">
               <pre className="p-4 text-sm text-muted-foreground overflow-x-auto font-mono leading-relaxed">
                 {robotsTxt}
               </pre>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={robotsCopied ? 'secondary' : 'outline'}
+                onClick={handleCopyRobots}
+                className="flex-1 gap-2 h-11"
+              >
+                {robotsCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {robotsCopied ? 'Copied!' : 'Copy'}
+              </Button>
+              <Button
+                onClick={handleDownloadRobots}
+                className="flex-1 gap-2 h-11 bg-primary hover:bg-primary/90"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
             </div>
           </div>
         </div>
