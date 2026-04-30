@@ -332,7 +332,7 @@ If in English, respond in English.
 Never mix languages in the same field.
 
 WEBSITE CONTENT:
-${scrapedContent.slice(0, 50000)}
+${scrapedContent.slice(0, 15000)}
 
 URL: ${url}
 
