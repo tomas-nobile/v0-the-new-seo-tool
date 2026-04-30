@@ -4,7 +4,6 @@ import { SiteDetectionBanner } from '@/components/site-detection-banner'
 import { AeoScoreCard } from '@/components/aeo-score-card'
 import { BeforeAfterComparison } from '@/components/before-after-comparison'
 import { GeneratedPagePreview } from '@/components/generated-page-preview'
-import { AIQuestionDemo } from '@/components/ai-question-demo'
 import type { AnalysisResult } from '@/lib/types'
 
 interface ResultsSectionProps {
@@ -25,37 +24,13 @@ export function ResultsSection({ result }: ResultsSectionProps) {
           <AeoScoreCard result={result} />
         </div>
 
-        {/* Section 3: Interactive AI Question Demo */}
+        {/* Section 3: Before/After AI Response */}
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-foreground mb-2">
-              What is the best {result.mainCategory}?
-            </h2>
-            <p className="text-muted-foreground">
-              See how AI agents respond before and after optimization
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            <AIQuestionDemo 
-              businessName={result.businessName}
-              category={result.mainCategory}
-              isOptimized={false}
-            />
-            <AIQuestionDemo 
-              businessName={result.businessName}
-              category={result.mainCategory}
-              isOptimized={true}
-            />
-          </div>
-        </div>
-
-        {/* Section 4: Before/After AI Response */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-450">
           <BeforeAfterComparison result={result} />
         </div>
 
-        {/* Section 5: Generated Page Preview */}
-        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-600">
+        {/* Section 4: Generated Page Preview */}
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-500">
           <GeneratedPagePreview result={result} />
         </div>
       </div>
