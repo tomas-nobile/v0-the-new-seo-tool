@@ -51,50 +51,43 @@ async function checkAICrawlerStatus(url: string) {
 
 // Function to generate action plan based on analysis
 function generateActionPlan(result: any, url: string): { actions: any[], quickWinsCount: number } {
+  const score = result.aeoScore
   const actions = []
-  
-  // QUICK WINS - HIGH IMPACT
-  if (!result.generatedPage) {
-    actions.push({
-      priority: 'QUICK WIN',
-      difficulty: 'Easy',
-      action: `Upload the generated HTML page to your website at /${result.businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
-      impact: 'High',
-    })
-  }
-  
-  // THIS WEEK - MEDIUM IMPACT (removed robots.txt from here since it's in Step 2)
-  
-  if (result.dimensions.contentClarity.score < 60) {
-    actions.push({
-      priority: 'QUICK WIN',
-      difficulty: 'Easy',
-      action: `Add a clear "About" page explaining what ${result.businessName} does and who you serve`,
-      impact: 'High',
-    })
-  }
-  
-  // THIS WEEK - MEDIUM IMPACT
-  const faqMissing = result.missingElements.some((e: string) => e.toLowerCase().includes('faq'))
-  if (faqMissing || result.dimensions.answerReadiness.score < 50) {
-    actions.push({
-      priority: 'THIS WEEK',
-      difficulty: 'Medium',
-      action: `Create a FAQ page with 10+ questions customers ask about ${result.mainCategory} and answer them from ${result.businessName}'s perspective`,
-      impact: 'High',
-    })
-  }
-  
-  if (result.siteType === 'business' && !result.location) {
-    actions.push({
-      priority: 'THIS WEEK',
-      difficulty: 'Easy',
-      action: 'Add your full location (address, city, region) to your homepage and contact page',
-      impact: 'Medium',
-    })
-  }
-  
-  if (result.dimensions.trustSignals.score < 50) {
+
+  // Always include: upload the generated page
+  actions.push({
+    priority: 'QUICK WIN',
+    difficulty: 'Easy',
+    action: `Upload the generated HTML page to your website at /${result.businessName.toLowerCase().replace(/\s+/g, '-')}.html`,
+    impact: 'High',
+  })
+
+  // Always include: FAQ page
+  actions.push({
+    priority: 'THIS WEEK',
+    difficulty: 'Medium',
+    action: `Create a FAQ page with 10+ questions customers ask about ${result.mainCategory} and answer them from ${result.businessName}'s perspective`,
+    impact: 'High',
+  })
+
+  // Always include: About page
+  actions.push({
+    priority: 'QUICK WIN',
+    difficulty: 'Easy',
+    action: `Add a clear "About" page explaining what ${result.businessName} does, who you serve, and your main differentiator`,
+    impact: 'High',
+  })
+
+  // Always include: Schema.org structured data
+  actions.push({
+    priority: 'LONG TERM',
+    difficulty: 'Hard',
+    action: `Add JSON-LD structured data (Schema.org) to all product/service pages:\n{\n  "@context": "https://schema.org",\n  "@type": "${result.siteType === 'ecommerce' ? 'Store' : 'LocalBusiness'}",\n  "name": "${result.businessName}",\n  "url": "${url}"\n}`,
+    impact: 'Medium',
+  })
+
+  // Score < 70: add trust signals
+  if (score < 70 && result.dimensions.trustSignals.score < 70) {
     actions.push({
       priority: 'THIS WEEK',
       difficulty: 'Medium',
@@ -102,33 +95,90 @@ function generateActionPlan(result: any, url: string): { actions: any[], quickWi
       impact: 'High',
     })
   }
-  
-  // LONG TERM - MEDIUM/LOW IMPACT
-  if (!result.generatedPage.includes('schema')) {
+
+  // Score < 60: add location if missing
+  if (score < 60) {
+    if (!result.location) {
+      actions.push({
+        priority: 'THIS WEEK',
+        difficulty: 'Easy',
+        action: 'Add your full location (address, city, region) to your homepage and contact page',
+        impact: 'Medium',
+      })
+    }
+    // Add product/service pages
+    if (result.productsOrServices.length > 0) {
+      actions.push({
+        priority: 'THIS WEEK',
+        difficulty: 'Medium',
+        action: `Create dedicated landing pages for your top products/services: ${result.productsOrServices.slice(0, 5).join(', ')}`,
+        impact: 'Medium',
+      })
+    }
+  }
+
+  // Score < 50: add contact info and pricing pages
+  if (score < 50) {
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Easy',
+      action: `Add a dedicated Contact page with phone, email, address, and business hours for ${result.businessName}`,
+      impact: 'Medium',
+    })
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Medium',
+      action: `Add pricing or pricing ranges for your ${result.mainCategory} products/services so AI agents can answer cost-related questions`,
+      impact: 'High',
+    })
+  }
+
+  // Score < 40: critical content gaps
+  if (score < 40) {
+    actions.push({
+      priority: 'QUICK WIN',
+      difficulty: 'Easy',
+      action: `Write a 200+ word homepage description that clearly explains what ${result.businessName} sells, who your customers are, and your key differentiator`,
+      impact: 'High',
+    })
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Medium',
+      action: `Create a "How it works" or "Our process" page explaining how customers can buy from ${result.businessName} step by step`,
+      impact: 'Medium',
+    })
     actions.push({
       priority: 'LONG TERM',
       difficulty: 'Hard',
-      action: `Add JSON-LD structured data (Schema.org) to all product/service pages. Start with: {
-  "@context": "https://schema.org",
-  "@type": "${result.siteType === 'ecommerce' ? 'Store' : 'LocalBusiness'}",
-  "name": "${result.businessName}",
-  "url": "${url}"
-}`,
-      impact: 'Medium',
+      action: `Start a blog or resources section with articles about ${result.mainCategory} trends, tips, and advice. AI agents cite content-rich sites more often`,
+      impact: 'Low',
     })
   }
-  
-  if (result.productsOrServices.length < 3 || result.dimensions.entityCoverage.score < 50) {
+
+  // Score < 30: severe coverage gaps
+  if (score < 30) {
+    actions.push({
+      priority: 'QUICK WIN',
+      difficulty: 'Easy',
+      action: `Add your business to Google Business Profile and link it from your website — AI agents pull data from Google listings`,
+      impact: 'High',
+    })
+    actions.push({
+      priority: 'THIS WEEK',
+      difficulty: 'Medium',
+      action: `Add social proof: number of customers served, years in business, or certifications/awards for ${result.businessName}`,
+      impact: 'Medium',
+    })
     actions.push({
       priority: 'LONG TERM',
       difficulty: 'Hard',
-      action: `Create dedicated landing pages for your top 5 products/services: ${result.productsOrServices.slice(0, 5).join(', ')}`,
+      action: `Create comparison pages: "${result.businessName} vs competitors" — AI agents use these to answer recommendation queries`,
       impact: 'Medium',
     })
   }
-  
+
   const quickWinsCount = actions.filter(a => a.priority === 'QUICK WIN').length
-  
+
   return { actions, quickWinsCount }
 }
 
