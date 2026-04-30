@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle2, XCircle, Copy, Download, Check, ChevronDown, ChevronUp, Sparkles, X } from 'lucide-react'
+import { CheckCircle2, XCircle, Copy, Download, Check, ChevronDown, ChevronUp, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { GeneratedPagePreview } from '@/components/generated-page-preview'
 import type { AnalysisResult, ActionItem } from '@/lib/types'
@@ -301,17 +301,46 @@ Please help me implement these changes to improve my website's visibility to AI 
             />
           </div>
           
-          {/* AI Prompt Generator Button */}
-          <Button
-            onClick={() => setShowPromptModal(true)}
-            variant="outline"
-            className="w-full gap-2 h-11 border-primary/30 hover:border-primary hover:bg-primary/5"
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            Generate prompt for your AI (v0, Claude, Cursor, Copilot)
-          </Button>
+          {/* AI Prompt Generator - Inline expandable */}
+          <div className="border border-primary/20 rounded-xl overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
+            <button
+              onClick={() => setShowPromptModal(!showPromptModal)}
+              className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <Sparkles className="w-4 h-4 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-medium text-foreground">Generate prompt for your AI</p>
+                  <p className="text-xs text-muted-foreground">v0, Claude, Cursor, GitHub Copilot</p>
+                </div>
+              </div>
+              <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${showPromptModal ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showPromptModal && (
+              <div className="border-t border-primary/20 p-4 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                <p className="text-sm text-muted-foreground">
+                  Copy this prompt and paste it into your AI assistant to get help implementing these improvements:
+                </p>
+                <div className="bg-background border border-border rounded-xl p-4 max-h-48 overflow-y-auto">
+                  <pre className="text-sm text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">
+                    {generateAIPrompt()}
+                  </pre>
+                </div>
+                <Button
+                  onClick={handleCopyPrompt}
+                  className="w-full gap-2 bg-primary hover:bg-primary/90"
+                >
+                  {promptCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  {promptCopied ? 'Copied to clipboard!' : 'Copy prompt'}
+                </Button>
+              </div>
+            )}
+          </div>
           
-          <div className="space-y-3 mt-4">
+          <div className="space-y-3">
             {websiteActions.map((action, index) => (
               <ActionItemCard
                 key={index}
@@ -324,54 +353,6 @@ Please help me implement these changes to improve my website's visibility to AI 
           </div>
         </div>
       </StepCard>
-
-      {/* AI Prompt Modal */}
-      {showPromptModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-foreground">AI Prompt Generated</h3>
-                  <p className="text-sm text-muted-foreground">Copy and paste into v0, Claude, Cursor, or GitHub Copilot</p>
-                </div>
-              </div>
-              <button 
-                onClick={() => setShowPromptModal(false)}
-                className="p-2 hover:bg-secondary rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-            
-            <div className="p-4 overflow-y-auto max-h-[50vh]">
-              <pre className="text-sm text-muted-foreground bg-background border border-border rounded-xl p-4 whitespace-pre-wrap font-mono leading-relaxed">
-                {generateAIPrompt()}
-              </pre>
-            </div>
-            
-            <div className="p-4 border-t border-border flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowPromptModal(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleCopyPrompt}
-                className="flex-1 gap-2 bg-primary hover:bg-primary/90"
-              >
-                {promptCopied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                {promptCopied ? 'Copied!' : 'Copy Prompt'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Step 2 */}
       <StepCard
