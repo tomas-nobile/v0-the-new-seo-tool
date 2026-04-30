@@ -1,5 +1,5 @@
 export interface ActionItem {
-  priority: 'High' | 'Medium' | 'Low'
+  priority: 'QUICK WIN' | 'THIS WEEK' | 'LONG TERM'
   difficulty: 'Easy' | 'Medium' | 'Hard'
   action: string
   impact: string
