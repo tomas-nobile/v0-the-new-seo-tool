@@ -14,7 +14,7 @@ export function Footer() {
           <p className="text-sm text-muted-foreground">
             Made by{' '}
             <a 
-              href="https://www.linkedin.com/in/tomas-e-nobile" 
+              href="https://tomasnobile.com.ar/en/" 
               target="_blank" 
               rel="noopener noreferrer"
               className="font-medium text-primary hover:text-primary/80 transition-colors underline"
