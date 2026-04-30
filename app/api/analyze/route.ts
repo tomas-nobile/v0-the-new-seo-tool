@@ -32,15 +32,18 @@ async function generateWithFallback(
   messages: { role: 'system' | 'user'; content: string }[]
 ): Promise<{ text: string; modelUsed: string }> {
   let lastError: unknown
-  for (const { model, name } of MODEL_CHAIN) {
+  for (let i = 0; i < MODEL_CHAIN.length; i++) {
+    const { model, name } = MODEL_CHAIN[i]
+    const isLast = i === MODEL_CHAIN.length - 1
     try {
       const { text } = await generateText({ model, messages })
       return { text, modelUsed: name }
     } catch (error) {
-      if (isRateLimitError(error)) {
-        lastError = error
-        continue
-      }
+      lastError = error
+      // Perplexity: skip on any error (no credits, auth, rate limit, etc.)
+      // Groq: skip only on rate limit
+      const skip = name.includes('Perplexity') || isRateLimitError(error)
+      if (skip && !isLast) continue
       throw error
     }
   }
