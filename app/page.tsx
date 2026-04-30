@@ -6,6 +6,7 @@ import { StatsSection } from '@/components/stats-section'
 import { HowItWorksSection } from '@/components/how-it-works-section'
 import { ResultsSection } from '@/components/results-section'
 import { Footer } from '@/components/footer'
+import { SetupErrorBanner } from '@/components/setup-error-banner'
 import type { AnalysisResult } from '@/lib/types'
 
 export default function Home() {
@@ -13,11 +14,13 @@ export default function Home() {
   const [loadingMessage, setLoadingMessage] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [setupError, setSetupError] = useState<{ error: string; details: string } | null>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
 
   const handleAnalyze = async (url: string) => {
     setIsAnalyzing(true)
     setError(null)
+    setSetupError(null)
     setResult(null)
 
     const loadingMessages = [
@@ -45,6 +48,10 @@ export default function Home() {
       const data = await response.json()
 
       if (!response.ok) {
+        if (data.isSetupError) {
+          setSetupError({ error: data.error, details: data.details })
+          return
+        }
         throw new Error(data.error || 'Failed to analyze website')
       }
 
@@ -64,6 +71,13 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
+      {setupError && (
+        <SetupErrorBanner 
+          error={setupError.error} 
+          details={setupError.details}
+          onDismiss={() => setSetupError(null)}
+        />
+      )}
       <HeroSection 
         onAnalyze={handleAnalyze}
         isAnalyzing={isAnalyzing}

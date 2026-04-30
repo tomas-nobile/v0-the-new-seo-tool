@@ -153,8 +153,22 @@ Analyze this website and return:
     return Response.json(output)
   } catch (error) {
     console.error('[v0] Analysis error:', error)
+    
+    // Check for AI Gateway credit card requirement
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    if (errorMessage.includes('credit card') || errorMessage.includes('customer_verification_required')) {
+      return Response.json(
+        { 
+          error: 'AI Gateway Setup Required',
+          details: 'To use this tool, you need to add a credit card to your Vercel account to unlock free AI Gateway credits. Visit your Vercel dashboard → AI → Add Credit Card.',
+          isSetupError: true
+        },
+        { status: 403 }
+      )
+    }
+    
     return Response.json(
-      { error: 'An unexpected error occurred while analyzing the website' },
+      { error: 'An unexpected error occurred while analyzing the website. Please try again.' },
       { status: 500 }
     )
   }
