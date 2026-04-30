@@ -390,7 +390,7 @@ Please help me implement these changes to improve my website's visibility to AI 
         stepNumber={2}
         icon="🤖"
         title="AI Analysis"
-        subtitle="Claude detects gaps in your AI visibility and identifies optimization opportunities"
+        subtitle={`Claude detects gaps in your AI visibility and identifies optimization opportunities. Upload the robots.txt to: ${result.url ? (() => { try { return new URL(result.url).origin } catch { return result.url } })() : 'yourdomain.com'}/robots.txt`}
         isComplete={step2Complete}
       >
         <div className="space-y-6">
