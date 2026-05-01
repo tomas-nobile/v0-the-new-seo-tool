@@ -448,8 +448,9 @@ CRITICAL FOR missingElements:
     // Parse the JSON response
     let parsedOutput
     try {
-      // Remove markdown code blocks if present
       let cleanedText = text.trim()
+
+      // Strip markdown code fences
       if (cleanedText.startsWith('```json')) {
         cleanedText = cleanedText.slice(7)
       } else if (cleanedText.startsWith('```')) {
@@ -459,8 +460,20 @@ CRITICAL FOR missingElements:
         cleanedText = cleanedText.slice(0, -3)
       }
       cleanedText = cleanedText.trim()
-      
-      parsedOutput = JSON.parse(cleanedText)
+
+      // First attempt: direct parse
+      try {
+        parsedOutput = JSON.parse(cleanedText)
+      } catch {
+        // Second attempt: extract the outermost {...} block (handles leading/trailing prose)
+        const firstBrace = cleanedText.indexOf('{')
+        const lastBrace = cleanedText.lastIndexOf('}')
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          parsedOutput = JSON.parse(cleanedText.slice(firstBrace, lastBrace + 1))
+        } else {
+          throw new Error('No JSON object found in model response')
+        }
+      }
     } catch {
       console.error('[v0] Failed to parse JSON:', text.slice(0, 500))
       return Response.json(
