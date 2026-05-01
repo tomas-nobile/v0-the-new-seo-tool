@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, ChevronDown } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/types'
 
 interface AeoScoreCardProps {
@@ -49,6 +49,7 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
     trustSignals: 0,
     answerReadiness: 0,
   })
+  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useEffect(() => {
     const scoreInterval = setInterval(() => {
@@ -84,41 +85,36 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
   const scoreInfo = getScoreLabel(result.aeoScore)
   const ScoreIcon = scoreInfo.icon
 
+  const weakest = dimensions.reduce((min, dim) => {
+    return result.dimensions[dim.key].score < result.dimensions[min.key].score ? dim : min
+  }, dimensions[0])
+
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-border bg-secondary/30">
-        <h3 className="text-lg font-semibold text-foreground">AI Visibility Score</h3>
-        <p className="text-sm text-muted-foreground">How well AI agents understand your business</p>
+      <div className="px-5 sm:px-6 py-4 border-b border-border bg-secondary/30">
+        <h3 className="text-base sm:text-lg font-semibold text-foreground">AI Visibility Score</h3>
+        <p className="text-xs sm:text-sm text-muted-foreground">How well AI agents understand your business</p>
       </div>
 
-      <div className="p-6">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Circular Score */}
-          <div className="flex flex-col items-center lg:items-start">
-            <div className="relative w-44 h-44">
-              {/* Background glow */}
+      <div className="p-5 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
+          <div className="flex flex-col items-center sm:items-start shrink-0">
+            <div className="relative w-32 h-32 sm:w-40 sm:h-40">
               <div className={`absolute inset-4 rounded-full blur-xl opacity-30 ${
-                result.aeoScore <= 40 ? 'bg-destructive' : 
+                result.aeoScore <= 40 ? 'bg-destructive' :
                 result.aeoScore <= 70 ? 'bg-warning' : 'bg-success'
               }`} />
-              
+
               <svg className="w-full h-full -rotate-90 relative z-10" viewBox="0 0 100 100">
-                {/* Track */}
                 <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
+                  cx="50" cy="50" r="45"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="6"
                   className="text-secondary"
                 />
-                {/* Progress */}
                 <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
+                  cx="50" cy="50" r="45"
                   fill="none"
                   strokeWidth="6"
                   strokeLinecap="round"
@@ -127,17 +123,16 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
                   className={`${getScoreStrokeColor(result.aeoScore)} transition-all duration-700 ease-out`}
                 />
               </svg>
-              
+
               <div className="absolute inset-0 flex flex-col items-center justify-center z-20">
-                <span className={`text-5xl font-bold tabular-nums ${getScoreColor(result.aeoScore)}`}>
+                <span className={`text-4xl sm:text-5xl font-bold tabular-nums ${getScoreColor(result.aeoScore)}`}>
                   {animatedScore}
                 </span>
-                <span className="text-muted-foreground text-sm mt-1">/ 100</span>
+                <span className="text-muted-foreground text-xs sm:text-sm mt-1">/ 100</span>
               </div>
             </div>
 
-            {/* Score label */}
-            <div className={`mt-4 flex items-center gap-2 px-4 py-2 rounded-full ${
+            <div className={`mt-3 flex items-center gap-2 px-3 py-1.5 rounded-full ${
               result.aeoScore <= 40 ? 'bg-destructive/10 text-destructive' :
               result.aeoScore <= 70 ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
             }`}>
@@ -146,42 +141,56 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
             </div>
           </div>
 
-          {/* Dimension Bars */}
-          <div className="flex-1 space-y-5">
-            {dimensions.map((dim, idx) => {
+          <div className="flex-1 min-w-0 space-y-3">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Your weakest area is{' '}
+              <span className="font-semibold text-foreground">{weakest.label}</span>{' '}
+              ({result.dimensions[weakest.key].score}%). {result.dimensions[weakest.key].feedback}
+            </p>
+            <button
+              type="button"
+              onClick={() => setShowBreakdown(!showBreakdown)}
+              aria-expanded={showBreakdown}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
+            >
+              {showBreakdown ? 'Hide breakdown' : 'View full breakdown'}
+              <ChevronDown className={`w-4 h-4 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {showBreakdown && (
+          <div className="mt-6 pt-6 border-t border-border space-y-5 animate-in slide-in-from-top-2 duration-300">
+            {dimensions.map((dim) => {
               const score = result.dimensions[dim.key].score
               const feedback = result.dimensions[dim.key].feedback
               const animatedValue = animatedDimensions[dim.key]
 
               return (
-                <div 
-                  key={dim.key}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
+                <div key={dim.key}>
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{dim.icon}</span>
-                      <span className="font-medium text-foreground">{dim.label}</span>
+                      <span className="font-medium text-foreground text-sm sm:text-base">{dim.label}</span>
                     </div>
                     <span className={`text-sm font-bold tabular-nums ${getScoreColor(score)}`}>
                       {animatedValue}%
                     </span>
                   </div>
-                  
-                  <div className="h-2.5 bg-secondary rounded-full overflow-hidden">
+
+                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor(score)}`}
                       style={{ width: `${animatedValue}%` }}
                     />
                   </div>
-                  
+
                   <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{feedback}</p>
                 </div>
               )
             })}
           </div>
-        </div>
+        )}
       </div>
     </div>
   )
