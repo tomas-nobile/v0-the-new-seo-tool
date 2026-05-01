@@ -215,11 +215,11 @@ export function ResultsSection({ result }: ResultsSectionProps) {
               </div>
 
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-                <AeoScoreCard result={result} />
+                <CollapsibleAIResponse result={result} />
               </div>
 
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-                <CollapsibleAIResponse result={result} />
+                <AeoScoreCard result={result} />
               </div>
             </aside>
 
