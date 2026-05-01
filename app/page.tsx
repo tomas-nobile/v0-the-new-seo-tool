@@ -110,6 +110,7 @@ export default function Home() {
         error={error}
         rateLimitError={rateLimitError}
         onRateLimitDismiss={() => setRateLimitError(null)}
+        hasResult={!!result}
       />
       <StatsSection />
       <HowItWorksSection />

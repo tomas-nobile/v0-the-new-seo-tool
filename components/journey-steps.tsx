@@ -26,7 +26,7 @@ interface StepCardProps {
 
 function StepCard({ stepNumber, icon, title, subtitle, isComplete, isOpen, onToggle, isLast, children }: StepCardProps) {
   return (
-    <div className="relative">
+    <div className="relative scroll-mt-4" data-step={stepNumber}>
       {!isLast && (
         <div className="absolute left-7 top-20 bottom-0 w-px border-l-2 border-dashed border-primary/20 -mb-4 z-0" />
       )}

@@ -97,9 +97,9 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
       </div>
 
       <div className="p-5 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-6 sm:gap-8">
-          <div className="flex flex-col items-center sm:items-start shrink-0">
-            <div className="relative w-32 h-32 sm:w-40 sm:h-40">
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex flex-col items-center shrink-0">
+            <div className="relative w-32 h-32 sm:w-36 sm:h-36">
               <div className={`absolute inset-4 rounded-full blur-xl opacity-30 ${
                 result.aeoScore <= 40 ? 'bg-destructive' :
                 result.aeoScore <= 70 ? 'bg-warning' : 'bg-success'
@@ -141,11 +141,11 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
             </div>
           </div>
 
-          <div className="flex-1 min-w-0 space-y-3">
+          <div className="w-full min-w-0 space-y-3 text-center">
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Your weakest area is{' '}
+              Weakest area:{' '}
               <span className="font-semibold text-foreground">{weakest.label}</span>{' '}
-              ({result.dimensions[weakest.key].score}%). {result.dimensions[weakest.key].feedback}
+              ({result.dimensions[weakest.key].score}%)
             </p>
             <button
               type="button"

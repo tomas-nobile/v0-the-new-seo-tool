@@ -11,6 +11,7 @@ interface HeroSectionProps {
   error: string | null
   rateLimitError: { retryAfterSeconds: number } | null
   onRateLimitDismiss?: () => void
+  hasResult?: boolean
 }
 
 function formatCountdown(seconds: number): string {
@@ -22,7 +23,7 @@ function formatCountdown(seconds: number): string {
   return `${s}s`
 }
 
-export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rateLimitError, onRateLimitDismiss }: HeroSectionProps) {
+export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rateLimitError, onRateLimitDismiss, hasResult = false }: HeroSectionProps) {
   const [url, setUrl] = useState('')
   const [validationError, setValidationError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
@@ -75,7 +76,9 @@ export function HeroSection({ onAnalyze, isAnalyzing, loadingMessage, error, rat
   }
 
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center px-4 py-20 overflow-hidden">
+    <section className={`relative flex flex-col items-center justify-center px-4 overflow-hidden transition-[min-height,padding] duration-500 ${
+      hasResult ? 'min-h-[55vh] py-12 md:py-16' : 'min-h-screen py-20'
+    }`}>
       {/* Subtle grid background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,oklch(0.15_0_0)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.15_0_0)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,black_40%,transparent_100%)]" />
       
