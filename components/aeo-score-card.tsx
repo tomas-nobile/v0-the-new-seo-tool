@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, TrendingDown, Minus, ChevronDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/types'
 
 interface AeoScoreCardProps {
@@ -49,7 +49,6 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
     trustSignals: 0,
     answerReadiness: 0,
   })
-  const [showBreakdown, setShowBreakdown] = useState(false)
 
   useEffect(() => {
     const scoreInterval = setInterval(() => {
@@ -84,10 +83,6 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
   const strokeDashoffset = circumference - (animatedScore / 100) * circumference
   const scoreInfo = getScoreLabel(result.aeoScore)
   const ScoreIcon = scoreInfo.icon
-
-  const weakest = dimensions.reduce((min, dim) => {
-    return result.dimensions[dim.key].score < result.dimensions[min.key].score ? dim : min
-  }, dimensions[0])
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
@@ -141,56 +136,38 @@ export function AeoScoreCard({ result }: AeoScoreCardProps) {
             </div>
           </div>
 
-          <div className="w-full min-w-0 space-y-3 text-center">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              Weakest area:{' '}
-              <span className="font-semibold text-foreground">{weakest.label}</span>{' '}
-              ({result.dimensions[weakest.key].score}%)
-            </p>
-            <button
-              type="button"
-              onClick={() => setShowBreakdown(!showBreakdown)}
-              aria-expanded={showBreakdown}
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
-            >
-              {showBreakdown ? 'Hide breakdown' : 'View full breakdown'}
-              <ChevronDown className={`w-4 h-4 transition-transform ${showBreakdown ? 'rotate-180' : ''}`} />
-            </button>
-          </div>
         </div>
 
-        {showBreakdown && (
-          <div className="mt-6 pt-6 border-t border-border space-y-5 animate-in slide-in-from-top-2 duration-300">
-            {dimensions.map((dim) => {
-              const score = result.dimensions[dim.key].score
-              const feedback = result.dimensions[dim.key].feedback
-              const animatedValue = animatedDimensions[dim.key]
+        <div className="mt-6 pt-6 border-t border-border space-y-5">
+          {dimensions.map((dim) => {
+            const score = result.dimensions[dim.key].score
+            const feedback = result.dimensions[dim.key].feedback
+            const animatedValue = animatedDimensions[dim.key]
 
-              return (
-                <div key={dim.key}>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-lg">{dim.icon}</span>
-                      <span className="font-medium text-foreground text-sm sm:text-base">{dim.label}</span>
-                    </div>
-                    <span className={`text-sm font-bold tabular-nums ${getScoreColor(score)}`}>
-                      {animatedValue}%
-                    </span>
+            return (
+              <div key={dim.key}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{dim.icon}</span>
+                    <span className="font-medium text-foreground text-sm sm:text-base">{dim.label}</span>
                   </div>
-
-                  <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor(score)}`}
-                      style={{ width: `${animatedValue}%` }}
-                    />
-                  </div>
-
-                  <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{feedback}</p>
+                  <span className={`text-sm font-bold tabular-nums ${getScoreColor(score)}`}>
+                    {animatedValue}%
+                  </span>
                 </div>
-              )
-            })}
-          </div>
-        )}
+
+                <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${getBarColor(score)}`}
+                    style={{ width: `${animatedValue}%` }}
+                  />
+                </div>
+
+                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{feedback}</p>
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

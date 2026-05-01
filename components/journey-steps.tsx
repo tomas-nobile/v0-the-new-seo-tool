@@ -26,7 +26,7 @@ interface StepCardProps {
 
 function StepCard({ stepNumber, icon, title, subtitle, isComplete, isOpen, onToggle, isLast, children }: StepCardProps) {
   return (
-    <div className="relative scroll-mt-4" data-step={stepNumber}>
+    <div className="relative scroll-mt-20 lg:scroll-mt-6" data-step={stepNumber}>
       {!isLast && (
         <div className="absolute left-7 top-20 bottom-0 w-px border-l-2 border-dashed border-primary/20 -mb-4 z-0" />
       )}
@@ -204,7 +204,14 @@ export function JourneySteps({ result, progress }: JourneyStepsProps) {
   }, [step2Complete, openStep, setOpenStep])
 
   const toggleStep = (step: JourneyStepId) => {
-    setOpenStep(openStep === step ? null : step)
+    const willOpen = openStep !== step
+    setOpenStep(willOpen ? step : null)
+    if (willOpen) {
+      requestAnimationFrame(() => {
+        const target = document.querySelector(`[data-step="${step}"]`)
+        target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
   }
 
   const crawlers = [
