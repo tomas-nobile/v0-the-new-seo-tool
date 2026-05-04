@@ -2,6 +2,12 @@ import { generateText } from 'ai'
 import { createGroq } from '@ai-sdk/groq'
 import { createOpenAI } from '@ai-sdk/openai'
 import { z } from 'zod'
+import {
+  buildLiveSearchQueries,
+  extractQueryHintsFromMarkdown,
+  runTavilyLiveSearch,
+  type LiveSearchEvidence,
+} from '@/lib/tavily-mcp'
 
 const groq = createGroq({
   apiKey: process.env.GROQ_API_KEY,
@@ -17,6 +23,118 @@ const MODEL_CHAIN = [
   { model: groq('llama-3.3-70b-versatile'), name: 'Llama 3.3 70B' },
   { model: groq('llama-3.1-8b-instant'), name: 'Llama 3.1 8B' },
 ]
+
+const detectionSchema = z.object({
+  businessName: z.string().nullable().optional(),
+  mainCategory: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  siteType: z.enum(['ecommerce', 'business']).nullable().optional(),
+  topProducts: z.array(z.string()).optional(),
+  detectedLanguage: z.enum(['en', 'es', 'pt']).nullable().optional(),
+})
+
+function detectLanguageFromMarkdown(markdown: string): 'en' | 'es' | 'pt' {
+  const sample = markdown.slice(0, 4000).toLowerCase()
+  // Tiny stopword count — works well enough for romance vs. english
+  const score = (words: string[]) =>
+    words.reduce((n, w) => n + (sample.match(new RegExp(`\\b${w}\\b`, 'g'))?.length ?? 0), 0)
+  const es = score(['de', 'la', 'el', 'que', 'los', 'las', 'para', 'con', 'una', 'sobre', 'más', 'también', 'envío', 'precio', 'servicios', 'productos'])
+  const pt = score(['de', 'da', 'do', 'que', 'para', 'com', 'uma', 'também', 'mais', 'serviços', 'produtos', 'frete', 'preço', 'são', 'não'])
+  const en = score(['the', 'and', 'for', 'with', 'about', 'shipping', 'price', 'services', 'products', 'our', 'this'])
+  if (pt > es && pt > en) return 'pt'
+  if (es > en) return 'es'
+  return 'en'
+}
+
+function nullifyLiteralNull(v: string | null | undefined): string | null {
+  if (v == null) return null
+  const s = String(v).trim()
+  if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'none') return null
+  return s
+}
+
+async function detectSiteHints(scrapedContent: string, url: string) {
+  const fallback = extractQueryHintsFromMarkdown(scrapedContent)
+  const fallbackLang = detectLanguageFromMarkdown(scrapedContent)
+  try {
+    const { text } = await generateText({
+      model: groq('llama-3.1-8b-instant'),
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You extract structured metadata from website content. Always respond with raw JSON only — no markdown, no prose.',
+        },
+        {
+          role: 'user',
+          content: `Extract metadata from this website. URL: ${url}
+
+Return ONLY this JSON shape (use null when unknown, do NOT invent):
+{
+  "businessName": "exact brand name as it appears",
+  "mainCategory": "short industry/category, e.g. 'pizza restaurant', 'leather furniture store', 'dental clinic'. Use the SAME LANGUAGE as the website content.",
+  "location": "city only (e.g. 'Buenos Aires', 'Madrid', 'São Paulo'), or null if no physical location is mentioned. Do NOT put industries or services here.",
+  "siteType": "ecommerce" OR "business",
+  "topProducts": ["up to 3 most prominent product or service names, in the website's own language"],
+  "detectedLanguage": "en" OR "es" OR "pt" — primary language of the content
+}
+
+CONTENT (truncated):
+${scrapedContent.slice(0, 4000)}`,
+        },
+      ],
+    })
+
+    let cleaned = text.trim()
+    if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7)
+    else if (cleaned.startsWith('```')) cleaned = cleaned.slice(3)
+    if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3)
+    const first = cleaned.indexOf('{')
+    const last = cleaned.lastIndexOf('}')
+    if (first === -1 || last <= first) throw new Error('no json')
+    const parsed = detectionSchema.parse(JSON.parse(cleaned.slice(first, last + 1)))
+
+    return {
+      businessName: nullifyLiteralNull(parsed.businessName) ?? fallback.businessName,
+      mainCategory: nullifyLiteralNull(parsed.mainCategory) ?? fallback.category,
+      location: nullifyLiteralNull(parsed.location) ?? fallback.location,
+      siteType: parsed.siteType ?? fallback.siteType,
+      topProducts: (parsed.topProducts ?? []).filter((p) => nullifyLiteralNull(p)),
+      detectedLanguage: parsed.detectedLanguage ?? fallbackLang,
+    }
+  } catch (err) {
+    console.error('[v0] hint detection failed, using regex fallback:', err)
+    return {
+      businessName: fallback.businessName,
+      mainCategory: fallback.category,
+      location: fallback.location,
+      siteType: fallback.siteType,
+      topProducts: [] as string[],
+      detectedLanguage: fallbackLang,
+    }
+  }
+}
+
+function summarizeEvidenceForPrompt(evidence: LiveSearchEvidence | null, userUrl: string): string {
+  if (!evidence) {
+    return 'NO LIVE SEARCH EVIDENCE AVAILABLE — fall back to inferring whatAISeeNow as before.'
+  }
+  const lines: string[] = []
+  lines.push(`User URL: ${userUrl}`)
+  lines.push(`User site appears in any result: ${evidence.appearsInResults ? 'YES' : 'NO'}`)
+  for (const q of evidence.queries) {
+    lines.push(`\nQUERY: "${q.query}"`)
+    if (q.results.length === 0) {
+      lines.push('  (no results)')
+      continue
+    }
+    q.results.forEach((r, i) => {
+      lines.push(`  ${i + 1}. ${r.title} — ${r.url}`)
+      if (r.snippet) lines.push(`     ${r.snippet.slice(0, 220)}`)
+    })
+  }
+  return lines.join('\n')
+}
 
 function isRateLimitError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error)
@@ -270,6 +388,24 @@ const analysisSchema = z.object({
     googlebot: z.boolean(),
   }).optional(),
   quickWinsCount: z.number().optional(),
+  liveSearchEvidence: z
+    .object({
+      appearsInResults: z.boolean(),
+      queries: z.array(
+        z.object({
+          query: z.string(),
+          results: z.array(
+            z.object({
+              title: z.string(),
+              url: z.string(),
+              snippet: z.string(),
+            }),
+          ),
+        }),
+      ),
+    })
+    .nullable()
+    .optional(),
 })
 
 export async function POST(req: Request) {
@@ -356,6 +492,42 @@ export async function POST(req: Request) {
       )
     }
 
+    // Step 1.5: Detect site hints + run Tavily MCP live search (best-effort, never blocks the demo)
+    let liveSearchEvidence: LiveSearchEvidence | null = null
+    const tavilyKey = process.env.TAVILY_API_KEY
+    if (tavilyKey) {
+      try {
+        const hints = await detectSiteHints(scrapedContent, url)
+        const queries = buildLiveSearchQueries({
+          category: hints.mainCategory,
+          location: hints.location,
+          businessName: hints.businessName,
+          siteType: hints.siteType,
+          topProducts: hints.topProducts,
+          language: hints.detectedLanguage,
+        })
+        if (queries.length > 0) {
+          liveSearchEvidence = await runTavilyLiveSearch(tavilyKey, queries, url, {
+            maxResultsPerQuery: 5,
+            timeoutMs: 25_000,
+          })
+          console.log(
+            '[v0] Tavily MCP returned',
+            liveSearchEvidence?.queries.length ?? 0,
+            'queries; appearsInResults =',
+            liveSearchEvidence?.appearsInResults,
+          )
+        }
+      } catch (err) {
+        console.error('[v0] Live search step failed (non-fatal):', err)
+        liveSearchEvidence = null
+      }
+    } else {
+      console.log('[v0] TAVILY_API_KEY not set — skipping live search')
+    }
+
+    const liveEvidenceContext = summarizeEvidenceForPrompt(liveSearchEvidence, url)
+
     // Step 2: Analyze with AI (Perplexity → Groq 70B → Groq 8B)
     const { text, modelUsed } = await generateWithFallback([
         {
@@ -377,6 +549,9 @@ WEBSITE CONTENT:
 ${scrapedContent.slice(0, 15000)}
 
 URL: ${url}
+
+LIVE SEARCH EVIDENCE (real results from Tavily MCP, run moments ago):
+${liveEvidenceContext}
 
 Return ONLY valid JSON (no markdown, no code blocks, just raw JSON) with this exact structure:
 
@@ -421,9 +596,10 @@ CRITICAL INSTRUCTIONS FOR SCORING:
 6. If no trust signals (reviews, about, team, certifications), score trustSignals low.
 
 CRITICAL FOR whatAISeeNow:
-- Write as if the business doesn't exist in AI training data
-- Be brutally honest about what ChatGPT would say today without optimization
-- This should make the user feel the urgency of the problem
+- If LIVE SEARCH EVIDENCE was provided above, you MUST ground this field in that evidence — do NOT invent.
+  - If "User site appears in any result: NO" → say explicitly that the user's site does NOT show up for these real-world queries, and CITE 1-3 specific competitor names/URLs that DO appear (taken from the queries above). Keep the phrasing as ChatGPT would respond.
+  - If "User site appears in any result: YES" → still be realistic; describe how the site appears (which queries, ranked alongside whom).
+- If NO LIVE SEARCH EVIDENCE was available, fall back to the original behavior: write as if the business doesn't exist in AI training data, be brutally honest, and create urgency.
 
 CRITICAL FOR whatAIWillSee:
 - Include specific product names from the scraped content
@@ -497,6 +673,7 @@ CRITICAL FOR missingElements:
       actionPlan: actions,
       aiCrawlerStatus,
       quickWinsCount,
+      liveSearchEvidence,
       modelUsed,
     }
 

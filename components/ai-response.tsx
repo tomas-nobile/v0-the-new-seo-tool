@@ -1,11 +1,13 @@
 import { ArrowDown, MessageCircle } from 'lucide-react'
 import type { AnalysisResult } from '@/lib/types'
+import { LiveEvidence } from '@/components/live-evidence'
 
 interface AIResponseProps {
   result: AnalysisResult
+  userUrl?: string
 }
 
-export function AIResponse({ result }: AIResponseProps) {
+export function AIResponse({ result, userUrl }: AIResponseProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
@@ -15,6 +17,12 @@ export function AIResponse({ result }: AIResponseProps) {
       <p className="text-sm text-muted-foreground">
         This is how AI assistants like ChatGPT, Claude, and Perplexity currently respond to questions about your business — and how they will respond after AEO optimization.
       </p>
+
+      {result.liveSearchEvidence && (
+        <div className="mt-2 pb-2 border-b border-border">
+          <LiveEvidence evidence={result.liveSearchEvidence} userUrl={userUrl} />
+        </div>
+      )}
 
       <div className="flex flex-col gap-3 mt-6">
         <div className="border border-border rounded-xl p-5 bg-card hover:bg-secondary/30 transition-colors">

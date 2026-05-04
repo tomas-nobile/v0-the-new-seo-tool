@@ -12,6 +12,22 @@ export interface AICrawlerStatus {
   googlebot: boolean
 }
 
+export interface LiveSearchResult {
+  title: string
+  url: string
+  snippet: string
+}
+
+export interface LiveSearchQuery {
+  query: string
+  results: LiveSearchResult[]
+}
+
+export interface LiveSearchEvidence {
+  appearsInResults: boolean
+  queries: LiveSearchQuery[]
+}
+
 export interface AnalysisResult {
   siteType: 'ecommerce' | 'business'
   businessName: string
@@ -45,5 +61,6 @@ export interface AnalysisResult {
   actionPlan: ActionItem[]
   aiCrawlerStatus: AICrawlerStatus
   quickWinsCount: number
+  liveSearchEvidence?: LiveSearchEvidence | null
   modelUsed?: string
 }

@@ -8,6 +8,19 @@ This repository is linked to a [v0](https://v0.app) project. You can continue de
 
 [Continue working on v0 →](https://v0.app/chat/projects/prj_xhMZX7xN7umLhoDS8NgE7I8WN6r5)
 
+## Setup
+
+This project needs the following environment variables in `.env.local` (and on Vercel for production):
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `FIRECRAWL_API_KEY` | yes | Scrapes the analyzed site |
+| `PERPLEXITY_API_KEY` | optional | First model in the analysis fallback chain |
+| `GROQ_API_KEY` | optional | Second/third models in the fallback chain (Llama 3.3 70B → 3.1 8B) |
+| `TAVILY_API_KEY` | optional | Powers the **live search evidence** step via the Tavily remote MCP server. When set, the API runs 2–3 real-world category queries (e.g. `best <category> in <city>`) before the LLM call and grounds the `whatAISeeNow` field in those results. Without it, the analyzer silently falls back to the inferred behavior. |
+
+Get a Tavily key at <https://tavily.com>. The remote MCP endpoint used is `https://mcp.tavily.com/mcp/?tavilyApiKey=<KEY>` (HTTP transport via `@ai-sdk/mcp`).
+
 ## Getting Started
 
 First, run the development server:

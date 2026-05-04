@@ -11,6 +11,7 @@ import type { AnalysisResult } from '@/lib/types'
 
 interface ResultsSectionProps {
   result: AnalysisResult
+  userUrl?: string
 }
 
 function getScoreColor(score: number): string {
@@ -80,40 +81,75 @@ function StickyOverview({ result, stepsComplete }: { result: AnalysisResult; ste
   )
 }
 
-function CollapsibleAIResponse({ result }: { result: AnalysisResult }) {
+function CollapsibleAIResponse({ result, userUrl }: { result: AnalysisResult; userUrl?: string }) {
   const [open, setOpen] = useState(false)
+  const hasLiveEvidence = !!result.liveSearchEvidence
+  const showHint = !open && hasLiveEvidence
 
   return (
-    <div className="border border-border rounded-2xl overflow-hidden bg-card">
+    <div
+      className={`relative border rounded-2xl overflow-hidden bg-card transition-all duration-300 ${
+        showHint
+          ? 'border-primary/40 shadow-[0_0_0_1px_rgba(124,58,237,0.25),0_8px_32px_-12px_rgba(124,58,237,0.45)]'
+          : 'border-border'
+      }`}
+    >
+      {showHint && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-primary/30 animate-pulse opacity-60"
+        />
+      )}
       <button
         type="button"
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between gap-3 p-4 sm:p-5 hover:bg-secondary/30 transition-colors text-left"
+        className={`group relative w-full flex items-center justify-between gap-3 p-4 sm:p-5 text-left transition-colors ${
+          showHint ? 'hover:bg-primary/5' : 'hover:bg-secondary/30'
+        }`}
       >
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+          <div className="relative w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
             <MessageCircle className="w-4 h-4 text-primary" />
+            {showHint && (
+              <span className="absolute -top-1 -right-1 flex h-3 w-3" aria-hidden>
+                <span className="absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75 animate-ping" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-destructive" />
+              </span>
+            )}
           </div>
           <div className="min-w-0">
-            <p className="font-semibold text-foreground text-sm">
-              AI: before & after
-            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="font-semibold text-foreground text-sm">
+                AI: before & after
+              </p>
+              {hasLiveEvidence && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary border border-primary/30 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                  Live
+                </span>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground truncate">
-              See how AI agents will describe you
+              {hasLiveEvidence
+                ? 'Tap to see real-time search evidence →'
+                : 'See how AI agents will describe you'}
             </p>
           </div>
         </div>
         <ChevronDown
-          className={`w-5 h-5 text-muted-foreground transition-transform duration-200 shrink-0 ${
-            open ? 'rotate-180' : ''
+          className={`w-5 h-5 shrink-0 transition-transform duration-200 ${
+            open
+              ? 'rotate-180 text-muted-foreground'
+              : showHint
+                ? 'text-primary animate-bounce group-hover:animate-none'
+                : 'text-muted-foreground'
           }`}
         />
       </button>
 
       {open && (
         <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-border animate-in slide-in-from-top-2 duration-200">
-          <AIResponse result={result} />
+          <AIResponse result={result} userUrl={userUrl} />
         </div>
       )}
     </div>
@@ -198,7 +234,7 @@ function BottomStepBar({
   )
 }
 
-export function ResultsSection({ result }: ResultsSectionProps) {
+export function ResultsSection({ result, userUrl }: ResultsSectionProps) {
   const progress = useJourneyProgress(result)
   const resultsRef = useRef<HTMLDivElement>(null)
 
@@ -215,7 +251,7 @@ export function ResultsSection({ result }: ResultsSectionProps) {
               </div>
 
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-                <CollapsibleAIResponse result={result} />
+                <CollapsibleAIResponse result={result} userUrl={userUrl} />
               </div>
 
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">

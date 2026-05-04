@@ -13,6 +13,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
+  const [analyzedUrl, setAnalyzedUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [setupError, setSetupError] = useState<{ error: string; details: string } | null>(null)
   const [rateLimitError, setRateLimitError] = useState<{ retryAfterSeconds: number } | null>(null)
@@ -24,6 +25,7 @@ export default function Home() {
     setSetupError(null)
     setRateLimitError(null)
     setResult(null)
+    setAnalyzedUrl(url)
 
     const loadingMessages = [
       'Scanning your website...',
@@ -117,7 +119,7 @@ export default function Home() {
       
       {result && (
         <div ref={resultsRef}>
-          <ResultsSection result={result} />
+          <ResultsSection result={result} userUrl={analyzedUrl ?? undefined} />
         </div>
       )}
       
