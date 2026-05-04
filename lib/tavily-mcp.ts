@@ -169,6 +169,7 @@ export type SupportedLanguage = 'en' | 'es' | 'pt'
 
 interface QueryTemplates {
   defaultCategory: string
+  brandLookup: (b: string, l: string) => string
   best: (c: string, l: string) => string
   recommendations: (c: string, l: string) => string
   whereToBuy: (p: string, l: string) => string
@@ -179,6 +180,7 @@ interface QueryTemplates {
 const TEMPLATES: Record<SupportedLanguage, QueryTemplates> = {
   en: {
     defaultCategory: 'business',
+    brandLookup: (b, l) => `${b}${l ? ` ${l}` : ''} reviews`,
     best: (c, l) => `best ${c}${l ? ` in ${l}` : ''}`,
     recommendations: (c, l) => `${c} recommendations${l ? ` in ${l}` : ''}`,
     whereToBuy: (p, l) => `where to buy ${p}${l ? ` in ${l}` : ''}`,
@@ -187,6 +189,7 @@ const TEMPLATES: Record<SupportedLanguage, QueryTemplates> = {
   },
   es: {
     defaultCategory: 'negocio',
+    brandLookup: (b, l) => `${b}${l ? ` ${l}` : ''} opiniones`,
     best: (c, l) => `mejor ${c}${l ? ` en ${l}` : ''}`,
     recommendations: (c, l) => `recomendaciones de ${c}${l ? ` en ${l}` : ''}`,
     whereToBuy: (p, l) => `dónde comprar ${p}${l ? ` en ${l}` : ''}`,
@@ -195,6 +198,7 @@ const TEMPLATES: Record<SupportedLanguage, QueryTemplates> = {
   },
   pt: {
     defaultCategory: 'negócio',
+    brandLookup: (b, l) => `${b}${l ? ` ${l}` : ''} avaliações`,
     best: (c, l) => `melhor ${c}${l ? ` em ${l}` : ''}`,
     recommendations: (c, l) => `recomendações de ${c}${l ? ` em ${l}` : ''}`,
     whereToBuy: (p, l) => `onde comprar ${p}${l ? ` em ${l}` : ''}`,
@@ -216,20 +220,28 @@ export function buildLiveSearchQueries(input: {
   const category = clean(input.category) || t.defaultCategory
   const location = clean(input.location)
   const topProduct = clean(input.topProducts?.[0])
+  const businessName = clean(input.businessName)
+
+  // First query: brand lookup. Tests whether the business surfaces when
+  // someone searches them by name directly. Falls back to "best <cat>" if
+  // we couldn't detect a name.
+  const firstQuery = businessName
+    ? t.brandLookup(businessName, location)
+    : t.best(category, location)
 
   if (input.siteType === 'ecommerce') {
     const queries = [
+      firstQuery,
       t.best(category, location),
-      topProduct ? t.whereToBuy(topProduct, location) : t.recommendations(category, location),
-      t.onlineStore(category, location),
+      topProduct ? t.whereToBuy(topProduct, location) : t.onlineStore(category, location),
     ]
     return Array.from(new Set(queries.filter(Boolean))).slice(0, 3)
   }
 
   const queries = [
+    firstQuery,
     t.best(category, location),
     t.recommendations(category, location),
-    t.topRated(category, location),
   ]
   return Array.from(new Set(queries.filter(Boolean))).slice(0, 3)
 }
